@@ -354,8 +354,56 @@ export class BeybladeArenaScene extends Phaser.Scene {
     }
   }
 
+  private getActorLock(actor: "player" | "ai"): number {
+    return actor === "player" ? this.playerLockedUntil : this.aiLockedUntil;
+  }
+
+  private setActorLock(actor: "player" | "ai", lockUntil: number): void {
+    if (actor === "player") {
+      this.playerLockedUntil = lockUntil;
+      return;
+    }
+    this.aiLockedUntil = lockUntil;
+  }
+
+  private applyCooldown(actor: "player" | "ai", cooldownMs: number): void {
+    const nextLock = this.time.now + cooldownMs;
+    const currentLock = this.getActorLock(actor);
+    this.setActorLock(actor, Math.max(currentLock, nextLock));
+  }
+
+  private getDodgeCooldown(actor: "player" | "ai"): number {
+    if (actor === "player") {
+      return DODGE_COOLDOWN_PLAYER_MS;
+    }
+
+    return this.config.difficulty === "easy"
+      ? DODGE_COOLDOWN_AI_MS + 240
+      : DODGE_COOLDOWN_AI_MS;
+  }
+
+  private getAttackRecoveryCooldown(actor: "player" | "ai", hit: boolean): number {
+    if (actor === "player") {
+      return hit ? ATTACK_COOLDOWN_HIT_MS : ATTACK_COOLDOWN_MISS_MS;
+    }
+
+    if (this.config.difficulty === "easy") {
+      return hit ? ATTACK_COOLDOWN_HIT_MS + 220 : ATTACK_COOLDOWN_MISS_MS + 260;
+    }
+
+    if (this.config.difficulty === "hard") {
+      return hit ? ATTACK_COOLDOWN_HIT_MS - 70 : ATTACK_COOLDOWN_MISS_MS - 100;
+    }
+
+    return hit ? ATTACK_COOLDOWN_HIT_MS : ATTACK_COOLDOWN_MISS_MS;
+  }
+
   private performAiAction(time: number): void {
     if (time < this.aiLockedUntil || this.winner) {
+      return;
+    }
+
+    if (this.config.difficulty === "easy" && Math.random() < 0.28) {
       return;
     }
 
@@ -375,7 +423,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
     }
 
     const now = this.time.now;
-    const lock = actor === "player" ? this.playerLockedUntil : this.aiLockedUntil;
+    const lock = this.getActorLock(actor);
 
     if (now < lock) {
       return;
@@ -404,43 +452,42 @@ export class BeybladeArenaScene extends Phaser.Scene {
     const now = this.time.now;
 
     this.playDodgeAnimation(actor);
+    this.applyCooldown(actor, this.getDodgeCooldown(actor));
 
     if (actor === "player") {
-      this.playerDodgingUntil = now + 360;
-      this.playerLockedUntil = now + 460;
+      this.playerDodgingUntil = now + 320;
       this.emitLog("player", "Dodge!", "combat");
       return;
     }
 
-    this.aiDodgingUntil = now + 360;
-    this.aiLockedUntil = now + 460;
+    this.aiDodgingUntil = now + 320;
     this.emitLog("ai", "AI slips out of range.", "combat");
   }
 
   private performAttack(actor: "player" | "ai"): void {
-    const now = this.time.now;
-
     this.playAttackAnimation(actor);
+    this.applyCooldown(actor, ATTACK_STRIKE_DELAY_MS + 50);
 
     if (actor === "player") {
-      this.playerLockedUntil = now + 720;
       this.emitLog("player", "Attack launched.", "combat");
 
-      if (aiMayReactivelyDodge(this.config.difficulty) && now > this.aiLockedUntil + 30) {
-        this.time.delayedCall(180, () => {
+      if (
+        aiMayReactivelyDodge(this.config.difficulty) &&
+        this.time.now > this.aiLockedUntil + 30
+      ) {
+        this.time.delayedCall(130, () => {
           if (!this.winner) {
             this.performDodge("ai");
           }
         });
       }
 
-      this.time.delayedCall(300, () => this.resolveAttack("player"));
+      this.time.delayedCall(ATTACK_STRIKE_DELAY_MS, () => this.resolveAttack("player"));
       return;
     }
 
-    this.aiLockedUntil = now + 700;
     this.emitLog("ai", "AI attacks with pressure.", "combat");
-    this.time.delayedCall(300, () => this.resolveAttack("ai"));
+    this.time.delayedCall(ATTACK_STRIKE_DELAY_MS, () => this.resolveAttack("ai"));
   }
 
   private performBitBeast(actor: "player" | "ai"): void {
