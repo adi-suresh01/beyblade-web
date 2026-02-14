@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { ArenaCanvas } from "@/components/ArenaCanvas";
 import { BEYBLADE_LIST, BEYBLADES } from "@/lib/game/beyblades";
 import {
@@ -24,7 +25,13 @@ const AI_VOICE_ID = process.env.NEXT_PUBLIC_ELEVENLABS_AI_VOICE_ID || "";
 const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 const COUNTDOWN_START = 3;
 
-type MatchPhase = "setup" | "countdown" | "await-launch" | "battle";
+type MatchPhase =
+  | "intro"
+  | "blade-select"
+  | "difficulty-select"
+  | "countdown"
+  | "await-launch"
+  | "battle";
 
 function makeId(): string {
   return `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
@@ -33,6 +40,10 @@ function makeId(): string {
 function pickRandomAiBlade(playerBlade: BeybladeId): BeybladeId {
   const options = BEYBLADE_LIST.map((blade) => blade.id).filter((id) => id !== playerBlade);
   return options[Math.floor(Math.random() * options.length)] || "driger";
+}
+
+function bladeStyle(color: string): CSSProperties {
+  return { "--blade-color": color } as CSSProperties;
 }
 
 async function fetchRoast(payload: {
@@ -79,8 +90,8 @@ export function BeybladeGameClient() {
 
   const [playerBlade, setPlayerBlade] = useState<BeybladeId>("dragoon");
   const [aiBlade, setAiBlade] = useState<BeybladeId>("driger");
-  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
-  const [matchPhase, setMatchPhase] = useState<MatchPhase>("setup");
+  const [difficulty, setDifficulty] = useState<Difficulty>("easy");
+  const [matchPhase, setMatchPhase] = useState<MatchPhase>("intro");
   const [countdown, setCountdown] = useState(COUNTDOWN_START);
   const [manualTrash, setManualTrash] = useState("");
   const [isTalking, setIsTalking] = useState(false);
@@ -104,7 +115,7 @@ export function BeybladeGameClient() {
       id: makeId(),
       speaker: "system",
       kind: "combat",
-      text: "LET IT RIP! Battle start.",
+      text: "LET IT RIP!",
       timestamp: Date.now()
     });
     setMatchPhase("battle");
@@ -219,7 +230,7 @@ export function BeybladeGameClient() {
         id: makeId(),
         kind: "combat",
         speaker: "system",
-        text: `Voice command recognized: ${command.toUpperCase()}`,
+        text: `Voice: ${command.toUpperCase()}`,
         timestamp: Date.now()
       });
       sendArenaCommand(command);
@@ -232,16 +243,16 @@ export function BeybladeGameClient() {
     }
   });
 
-  const resetToSetup = useCallback(() => {
+  const resetToIntro = useCallback(() => {
     stop();
     stopLaunchListening();
     clearLogs();
     setManualTrash("");
-    setMatchPhase("setup");
     setCountdown(COUNTDOWN_START);
+    setMatchPhase("intro");
   }, [clearLogs, stop, stopLaunchListening]);
 
-  const startMatch = useCallback(() => {
+  const startLaunchSequence = useCallback(() => {
     stop();
     stopLaunchListening();
     clearLogs();
@@ -263,7 +274,7 @@ export function BeybladeGameClient() {
 
     const timer = window.setTimeout(() => {
       setCountdown((value) => value - 1);
-    }, 850);
+    }, 820);
 
     return () => {
       window.clearTimeout(timer);
@@ -309,7 +320,7 @@ export function BeybladeGameClient() {
           id: makeId(),
           kind: "combat",
           speaker: "system",
-          text: "Keyboard command: ATTACK",
+          text: "Key: ATTACK",
           timestamp: Date.now()
         });
         sendArenaCommand("attack");
@@ -318,7 +329,7 @@ export function BeybladeGameClient() {
           id: makeId(),
           kind: "combat",
           speaker: "system",
-          text: "Keyboard command: DODGE",
+          text: "Key: DODGE",
           timestamp: Date.now()
         });
         sendArenaCommand("dodge");
@@ -327,7 +338,7 @@ export function BeybladeGameClient() {
           id: makeId(),
           kind: "combat",
           speaker: "system",
-          text: "Keyboard command: BIT-BEAST",
+          text: "Key: BIT-BEAST",
           timestamp: Date.now()
         });
         sendArenaCommand("bit-beast");
@@ -339,69 +350,121 @@ export function BeybladeGameClient() {
   }, [inBattle]);
 
   return (
-    <main className="page">
+    <main className={`page phase-${matchPhase}`}>
       <section className="hero">
         <h1>Beyblade Voice Arena</h1>
-        <p>
-          Launch by voice, battle in real time, and trade ElevenLabs-powered trash talk with the AI.
-        </p>
       </section>
 
-      {matchPhase === "setup" ? (
-        <section className="panel launch-panel">
-          <h2>Match Setup</h2>
-          <div className="config-panel setup-grid">
-            <div>
-              <label htmlFor="playerBlade">Your Blade</label>
-              <select
-                id="playerBlade"
-                value={playerBlade}
-                onChange={(event) => setPlayerBlade(event.target.value as BeybladeId)}
-              >
-                {BEYBLADE_LIST.map((blade) => (
-                  <option key={blade.id} value={blade.id}>
-                    {blade.name} - {blade.bitBeast}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="difficulty">Difficulty</label>
-              <select
-                id="difficulty"
-                value={difficulty}
-                onChange={(event) => setDifficulty(event.target.value as Difficulty)}
-              >
-                {DIFFICULTIES.map((level) => (
-                  <option key={level} value={level}>
-                    {level.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button onClick={startMatch}>Start Launch Sequence</button>
+      {matchPhase === "intro" ? (
+        <section className="panel intro-panel view-panel">
+          <button className="start-button" onClick={() => setMatchPhase("blade-select")}>
+            START
+          </button>
+          <div className="blade-preview-grid">
+            {BEYBLADE_LIST.map((blade) => (
+              <div key={blade.id} className="blade-preview-item">
+                <div className="blade-wheel" style={bladeStyle(blade.color)}>
+                  <Image
+                    className="blade-image"
+                    src={`/beyblades/${blade.id}.png`}
+                    alt={blade.name}
+                    width={90}
+                    height={90}
+                  />
+                </div>
+                <p>{blade.name}</p>
+              </div>
+            ))}
           </div>
-          <p className="muted">
-            AI selects a random different Beyblade when the launch sequence starts.
-          </p>
+        </section>
+      ) : null}
+
+      {matchPhase === "blade-select" ? (
+        <section className="panel selector-panel view-panel">
+          <h2>Select Beyblade</h2>
+          <div className="blade-select-grid">
+            {BEYBLADE_LIST.map((blade) => {
+              const selected = playerBlade === blade.id;
+              return (
+                <button
+                  key={blade.id}
+                  className={`blade-select-card ${selected ? "selected" : ""}`}
+                  onClick={() => setPlayerBlade(blade.id)}
+                  aria-pressed={selected}
+                >
+                  <div className="blade-wheel" style={bladeStyle(blade.color)}>
+                    <Image
+                      className="blade-image"
+                      src={`/beyblades/${blade.id}.png`}
+                      alt={blade.name}
+                      width={90}
+                      height={90}
+                    />
+                  </div>
+                  <strong>{blade.name}</strong>
+                  <span>{blade.bitBeast}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="flow-actions">
+            <button className="secondary" onClick={() => setMatchPhase("intro")}>
+              Back
+            </button>
+            <button onClick={() => setMatchPhase("difficulty-select")}>Next</button>
+          </div>
+        </section>
+      ) : null}
+
+      {matchPhase === "difficulty-select" ? (
+        <section className="panel selector-panel view-panel">
+          <h2>Select Difficulty</h2>
+          <div className="difficulty-grid">
+            {DIFFICULTIES.map((level) => {
+              const selected = difficulty === level;
+              return (
+                <button
+                  key={level}
+                  className={`difficulty-card ${selected ? "selected" : ""}`}
+                  onClick={() => setDifficulty(level)}
+                  aria-pressed={selected}
+                >
+                  <strong>{level.toUpperCase()}</strong>
+                </button>
+              );
+            })}
+          </div>
+          <div className="flow-actions">
+            <button className="secondary" onClick={() => setMatchPhase("blade-select")}>
+              Back
+            </button>
+            <button onClick={startLaunchSequence}>Start Match</button>
+          </div>
         </section>
       ) : null}
 
       {inLaunchSequence ? (
-        <section className="panel launch-panel">
-          <h2>Launch Sequence</h2>
+        <section className="panel launch-panel view-panel">
+          <h2>Launch</h2>
           <div className="launch-grid">
             <article className="trainer-card">
-              <p className="trainer-tag">Player 1</p>
-              <h3>You</h3>
+              <p className="trainer-tag">YOU</p>
+              <h3>{BEYBLADES[playerBlade].name}</h3>
               <p className="blade-badge" style={{ borderColor: BEYBLADES[playerBlade].color }}>
-                {BEYBLADES[playerBlade].name}
+                {BEYBLADES[playerBlade].bitBeast}
               </p>
+              <div className="trainer-blade-mini">
+                <Image
+                  className="trainer-blade-image"
+                  src={`/beyblades/${playerBlade}.png`}
+                  alt={BEYBLADES[playerBlade].name}
+                  width={74}
+                  height={74}
+                />
+              </div>
               <div className="launcher-ui">
                 <span className="launcher-body">Launcher</span>
-                <span className="ripcord">Ripcord Loaded</span>
+                <span className="ripcord">Ripcord</span>
               </div>
             </article>
 
@@ -409,45 +472,49 @@ export function BeybladeGameClient() {
               <p className="countdown-mark">
                 {matchPhase === "countdown" && countdown > 0 ? countdown : "LET IT RIP"}
               </p>
-              {matchPhase === "countdown" ? (
-                <p className="muted">3... 2... 1...</p>
-              ) : (
+              {matchPhase === "await-launch" ? (
                 <>
-                  <p className="muted">Say let it rip to launch the battle.</p>
                   <div className="launch-controls">
                     {launchSupported ? (
                       <button onClick={isLaunchListening ? stopLaunchListening : startLaunchListening}>
-                        {isLaunchListening ? "Listening for phrase..." : "Listen for Let It Rip"}
+                        {isLaunchListening ? "Listening" : "Listen"}
                       </button>
                     ) : null}
                     <button className="secondary" onClick={handleLaunchConfirmed}>
-                      Launch Manually
+                      Manual Launch
                     </button>
                   </div>
-                  {launchTranscript ? (
-                    <p className="muted">Launch transcript: {launchTranscript}</p>
-                  ) : null}
-                  {launchError ? <p className="error">Launch voice error: {launchError}</p> : null}
+                  {launchTranscript ? <p className="muted">{launchTranscript}</p> : null}
+                  {launchError ? <p className="error">{launchError}</p> : null}
                 </>
-              )}
+              ) : null}
             </div>
 
             <article className="trainer-card trainer-card-ai">
-              <p className="trainer-tag">Player 2</p>
-              <h3>AI Rival</h3>
+              <p className="trainer-tag">AI</p>
+              <h3>{BEYBLADES[aiBlade].name}</h3>
               <p className="blade-badge" style={{ borderColor: BEYBLADES[aiBlade].color }}>
-                {BEYBLADES[aiBlade].name}
+                {BEYBLADES[aiBlade].bitBeast}
               </p>
+              <div className="trainer-blade-mini">
+                <Image
+                  className="trainer-blade-image"
+                  src={`/beyblades/${aiBlade}.png`}
+                  alt={BEYBLADES[aiBlade].name}
+                  width={74}
+                  height={74}
+                />
+              </div>
               <div className="launcher-ui">
                 <span className="launcher-body">Launcher</span>
-                <span className="ripcord">Ripcord Loaded</span>
+                <span className="ripcord">Ripcord</span>
               </div>
             </article>
           </div>
 
           <div className="launch-footer">
-            <button className="secondary" onClick={resetToSetup}>
-              Cancel Launch
+            <button className="secondary" onClick={resetToIntro}>
+              Cancel
             </button>
           </div>
         </section>
@@ -472,10 +539,10 @@ export function BeybladeGameClient() {
             </div>
             <div className="battle-head-actions">
               <button className="secondary" onClick={() => sendArenaReset()}>
-                Replay Match
+                Replay
               </button>
-              <button className="secondary" onClick={resetToSetup}>
-                New Setup
+              <button className="secondary" onClick={resetToIntro}>
+                New Match
               </button>
             </div>
           </section>
@@ -512,14 +579,6 @@ export function BeybladeGameClient() {
             <div className="meter">
               <div style={{ width: `${arena.aiBit}%`, background: "#ffd84d" }} />
             </div>
-
-            <div className="winner">
-              {arena.winner
-                ? arena.winner === "player"
-                  ? "Winner: You"
-                  : "Winner: AI"
-                : "In Match"}
-            </div>
           </section>
 
           <section className="panel arena-panel">
@@ -535,35 +594,28 @@ export function BeybladeGameClient() {
           <section className="panel voice-panel">
             <div className="voice-controls">
               <button onClick={isListening ? stop : start} disabled={!supported}>
-                {isListening ? "Stop Voice Input" : "Start Voice Input"}
+                {isListening ? "Stop Voice" : "Start Voice"}
               </button>
               <button
                 className="secondary"
                 onClick={() => {
-                  void triggerAiRoast(
-                    "Say something mean and confident.",
-                    "Player requested a direct roast"
-                  );
+                  void triggerAiRoast("Talk back.", "Player requested roast");
                 }}
                 disabled={isTalking}
               >
-                Provoke AI Roast
+                Provoke AI
               </button>
               <button className="secondary" onClick={clearLogs}>
                 Clear Logs
               </button>
             </div>
 
-            <p className="muted">
-              Voice input supports both commands and trash talk. Commands: attack, dodge, bit
-              beast.
-            </p>
-            {lastTranscript ? <p className="muted">Last transcript: {lastTranscript}</p> : null}
-            {error ? <p className="error">Speech error: {error}</p> : null}
+            {lastTranscript ? <p className="muted">{lastTranscript}</p> : null}
+            {error ? <p className="error">{error}</p> : null}
 
             <div className="manual-trash">
               <input
-                placeholder="Type trash talk and send"
+                placeholder="Type trash talk"
                 value={manualTrash}
                 onChange={(event) => setManualTrash(event.target.value)}
               />
@@ -579,7 +631,7 @@ export function BeybladeGameClient() {
           </section>
 
           <section className="panel logs-panel">
-            <h2>Combat + Trash Talk Feed</h2>
+            <h2>Feed</h2>
             <ul>
               {logs.map((log) => (
                 <li key={log.id}>

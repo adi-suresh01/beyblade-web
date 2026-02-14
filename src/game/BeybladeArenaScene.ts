@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { decideAiAction, aiActionDelay, aiMayReactivelyDodge } from "@/lib/game/ai";
+import { aiActionDelay, aiMayReactivelyDodge, decideAiAction } from "@/lib/game/ai";
 import { BEYBLADES } from "@/lib/game/beyblades";
 import {
   emitArenaLog,
@@ -17,17 +17,30 @@ import {
   MAX_BIT,
   MAX_HP
 } from "@/lib/game/constants";
-import { ArenaConfig, ArenaLog, GameCommand } from "@/lib/game/types";
+import { ArenaConfig, ArenaLog, BEYBLADE_IDS, BeybladeId, GameCommand } from "@/lib/game/types";
+
+type ActorId = "player" | "ai";
 
 interface SpeechBubble {
   container: Phaser.GameObjects.Container;
   text: Phaser.GameObjects.Text;
 }
 
-interface MotionOffsets {
-  dashX: number;
-  pushX: number;
-  dodgeX: number;
+interface ActorVisual {
+  shadow?: Phaser.GameObjects.Ellipse;
+  glow?: Phaser.GameObjects.Ellipse;
+  blade?: Phaser.GameObjects.Image;
+}
+
+interface ActorMotion {
+  homeX: number;
+  homeY: number;
+  phase: number;
+  spinDegPerSec: number;
+  attackOffsetX: number;
+  dodgeOffsetX: number;
+  dodgeOffsetY: number;
+  pushOffsetX: number;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -38,18 +51,57 @@ function logId(): string {
   return `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 }
 
-const ATTACK_STRIKE_DELAY_MS = 230;
-const ATTACK_COOLDOWN_HIT_MS = 340;
-const ATTACK_COOLDOWN_MISS_MS = 980;
+const ARENA_CENTER_X = 400;
+const ARENA_CENTER_Y = 210;
+const PLAYER_HOME_X = 232;
+const AI_HOME_X = 568;
+const PLAYER_HOME_Y = 208;
+const AI_HOME_Y = 214;
+const ORBIT_X = 18;
+const ORBIT_Y = 13;
+const BLADE_SIZE = 116;
+const ATTACK_STRIKE_DELAY_MS = 220;
+const ATTACK_COOLDOWN_HIT_MS = 360;
+const ATTACK_COOLDOWN_MISS_MS = 960;
 const DODGE_COOLDOWN_PLAYER_MS = 760;
-const DODGE_COOLDOWN_AI_MS = 860;
-const ATTACK_LUNGE_DISTANCE = 340;
+const DODGE_COOLDOWN_AI_MS = 980;
+const ATTACK_LUNGE_DISTANCE = 310;
+const ATTACK_LUNGE_IN_MS = 160;
+const ATTACK_LUNGE_HOLD_MS = 45;
+const BATTLE_TEXTURE_OVERRIDE: Partial<Record<BeybladeId, string>> = {
+  dranzer: "blade-dranzer-spinning"
+};
 
 export class BeybladeArenaScene extends Phaser.Scene {
   private config: ArenaConfig = DEFAULT_ARENA_CONFIG;
 
-  private playerToken?: Phaser.GameObjects.Arc;
-  private aiToken?: Phaser.GameObjects.Arc;
+  private visuals: Record<ActorId, ActorVisual> = {
+    player: {},
+    ai: {}
+  };
+
+  private motion: Record<ActorId, ActorMotion> = {
+    player: {
+      homeX: PLAYER_HOME_X,
+      homeY: PLAYER_HOME_Y,
+      phase: 0.3,
+      spinDegPerSec: 660,
+      attackOffsetX: 0,
+      dodgeOffsetX: 0,
+      dodgeOffsetY: 0,
+      pushOffsetX: 0
+    },
+    ai: {
+      homeX: AI_HOME_X,
+      homeY: AI_HOME_Y,
+      phase: 1.2,
+      spinDegPerSec: -640,
+      attackOffsetX: 0,
+      dodgeOffsetX: 0,
+      dodgeOffsetY: 0,
+      pushOffsetX: 0
+    }
+  };
 
   private playerTrainer?: Phaser.GameObjects.Container;
   private aiTrainer?: Phaser.GameObjects.Container;
@@ -63,7 +115,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
   private aiHp = MAX_HP;
   private playerBit = 0;
   private aiBit = 0;
-  private winner: "player" | "ai" | null = null;
+  private winner: ActorId | null = null;
 
   private playerLockedUntil = 0;
   private aiLockedUntil = 0;
@@ -72,10 +124,6 @@ export class BeybladeArenaScene extends Phaser.Scene {
   private playerDodgingUntil = 0;
   private aiDodgingUntil = 0;
   private playerCooldownNoticeAt = 0;
-  private motion: { player: MotionOffsets; ai: MotionOffsets } = {
-    player: { dashX: 0, pushX: 0, dodgeX: 0 },
-    ai: { dashX: 0, pushX: 0, dodgeX: 0 }
-  };
 
   private aiThinkClock = 0;
 
@@ -88,35 +136,35 @@ export class BeybladeArenaScene extends Phaser.Scene {
     super("arena");
   }
 
+  preload(): void {
+    for (const bladeId of BEYBLADE_IDS) {
+      const baseKey = this.textureKey(bladeId);
+      if (!this.textures.exists(baseKey)) {
+        this.load.image(baseKey, `/beyblades/${bladeId}.png`);
+      }
+    }
+
+    if (!this.textures.exists("blade-dranzer-spinning")) {
+      this.load.image("blade-dranzer-spinning", "/beyblades/dranzer_spinning.png");
+    }
+  }
+
   create(): void {
     this.config = getArenaConfig();
 
-    this.add.rectangle(400, 210, 760, 360, 0x0a1630, 0.9).setStrokeStyle(3, 0x264071, 0.85);
-    this.add.circle(400, 210, 140, 0x13295a, 0.5).setStrokeStyle(2, 0x2a4f8f, 0.7);
-
-    this.playerToken = this.add
-      .circle(220, 210, 24, this.resolveBladeColor(this.config.playerBlade), 1)
-      .setDepth(12);
-    this.aiToken = this.add
-      .circle(580, 210, 24, this.resolveBladeColor(this.config.aiBlade), 1)
-      .setDepth(12);
-
+    this.drawArenaBackdrop();
+    this.renderBladeSprites();
     this.renderTrainerModels();
     this.renderTrashBubbles();
 
     this.attachListeners();
     this.broadcastState();
-    this.emitSystem(
-      `Arena online. ${BEYBLADES[this.config.playerBlade].name} vs ${BEYBLADES[this.config.aiBlade].name}.`
-    );
+    this.emitSystem("Arena ready.");
   }
 
   update(time: number, delta: number): void {
-    if (!this.playerToken || !this.aiToken) {
-      return;
-    }
-
-    this.animateTokens();
+    this.updateActorVisual("player", time, delta);
+    this.updateActorVisual("ai", time, delta);
 
     if (this.winner) {
       return;
@@ -129,16 +177,128 @@ export class BeybladeArenaScene extends Phaser.Scene {
     }
   }
 
-  private resolveBladeColor(bladeId: ArenaConfig["playerBlade"]): number {
+  private textureKey(bladeId: BeybladeId): string {
+    return `blade-${bladeId}`;
+  }
+
+  private battleTextureKey(bladeId: BeybladeId): string {
+    return BATTLE_TEXTURE_OVERRIDE[bladeId] || this.textureKey(bladeId);
+  }
+
+  private resolveBladeColor(bladeId: BeybladeId): number {
     return Phaser.Display.Color.HexStringToColor(BEYBLADES[bladeId].color).color;
+  }
+
+  private drawArenaBackdrop(): void {
+    this.add
+      .rectangle(ARENA_CENTER_X, ARENA_CENTER_Y, 760, 360, 0x081630, 0.95)
+      .setStrokeStyle(3, 0x294c87, 0.85);
+
+    this.add
+      .circle(ARENA_CENTER_X, ARENA_CENTER_Y, 184, 0x10275a, 0.62)
+      .setStrokeStyle(4, 0x3d70c4, 0.5);
+
+    this.add
+      .circle(ARENA_CENTER_X, ARENA_CENTER_Y, 132, 0x0a1836, 0.78)
+      .setStrokeStyle(2, 0x4f89e8, 0.5);
+  }
+
+  private renderBladeSprites(): void {
+    this.destroyActorVisual("player");
+    this.destroyActorVisual("ai");
+
+    this.visuals.player = this.createActorVisual("player", this.config.playerBlade);
+    this.visuals.ai = this.createActorVisual("ai", this.config.aiBlade);
+
+    this.updateActorVisual("player", this.time.now, 16);
+    this.updateActorVisual("ai", this.time.now, 16);
+  }
+
+  private destroyActorVisual(actor: ActorId): void {
+    const visual = this.visuals[actor];
+    visual.shadow?.destroy();
+    visual.glow?.destroy();
+    visual.blade?.destroy();
+    this.visuals[actor] = {};
+  }
+
+  private createActorVisual(actor: ActorId, bladeId: BeybladeId): ActorVisual {
+    const color = this.resolveBladeColor(bladeId);
+
+    const shadow = this.add
+      .ellipse(0, 0, BLADE_SIZE * 0.88, BLADE_SIZE * 0.24, 0x000000, 0.35)
+      .setDepth(9);
+
+    const glow = this.add
+      .ellipse(0, 0, BLADE_SIZE * 1.16, BLADE_SIZE * 1.16, color, 0.14)
+      .setStrokeStyle(3, color, 0.92)
+      .setDepth(10);
+
+    const blade = this.add
+      .image(0, 0, this.battleTextureKey(bladeId))
+      .setDisplaySize(BLADE_SIZE, BLADE_SIZE)
+      .setDepth(13)
+      .setScale(1);
+
+    if (actor === "ai") {
+      blade.rotation = Math.PI;
+    }
+
+    return { shadow, glow, blade };
+  }
+
+  private updateActorVisual(actor: ActorId, time: number, delta: number): void {
+    const visual = this.visuals[actor];
+    const state = this.motion[actor];
+
+    state.pushOffsetX *= 0.82;
+    if (Math.abs(state.pushOffsetX) < 0.1) {
+      state.pushOffsetX = 0;
+    }
+
+    const orbitX = Math.sin(time / 230 + state.phase) * ORBIT_X;
+    const orbitY = Math.cos(time / 290 + state.phase) * ORBIT_Y;
+
+    const x = clamp(
+      state.homeX + orbitX + state.attackOffsetX + state.dodgeOffsetX + state.pushOffsetX,
+      actor === "player" ? 70 : 220,
+      actor === "player" ? 580 : 730
+    );
+    const y = state.homeY + orbitY + state.dodgeOffsetY;
+
+    visual.shadow?.setPosition(x, y + BLADE_SIZE * 0.32).setScale(
+      1 + Math.abs(state.attackOffsetX) / 560,
+      1
+    );
+
+    visual.glow?.setPosition(x, y).setRotation(
+      (time / 1200) * (actor === "player" ? 1 : -1)
+    );
+
+    if (visual.blade) {
+      visual.blade.setPosition(x, y);
+      visual.blade.rotation += Phaser.Math.DegToRad(state.spinDegPerSec) * (delta / 1000);
+    }
   }
 
   private renderTrainerModels(): void {
     this.playerTrainer?.destroy(true);
     this.aiTrainer?.destroy(true);
 
-    this.playerTrainer = this.createTrainerModel(130, 300, "YOU", this.resolveBladeColor(this.config.playerBlade), "right");
-    this.aiTrainer = this.createTrainerModel(670, 300, "AI", this.resolveBladeColor(this.config.aiBlade), "left");
+    this.playerTrainer = this.createTrainerModel(
+      122,
+      308,
+      "YOU",
+      this.resolveBladeColor(this.config.playerBlade),
+      "right"
+    );
+    this.aiTrainer = this.createTrainerModel(
+      678,
+      308,
+      "AI",
+      this.resolveBladeColor(this.config.aiBlade),
+      "left"
+    );
   }
 
   private createTrainerModel(
@@ -148,35 +308,53 @@ export class BeybladeArenaScene extends Phaser.Scene {
     jacketColor: number,
     facing: "left" | "right"
   ): Phaser.GameObjects.Container {
-    const head = this.add
-      .circle(0, -42, 12, 0xf4d7b7, 1)
-      .setStrokeStyle(2, 0x1b2746, 0.95);
-    const torso = this.add
-      .rectangle(0, -12, 24, 40, jacketColor, 1)
-      .setStrokeStyle(2, 0x1b2746, 0.95);
-    const legLeft = this.add.rectangle(-7, 18, 8, 20, 0x1a2c57, 1);
-    const legRight = this.add.rectangle(7, 18, 8, 20, 0x1a2c57, 1);
+    const hair = this.add
+      .ellipse(0, -49, 24, 16, 0x1e2b53, 1)
+      .setStrokeStyle(1, 0x111a35, 0.95);
 
-    const launcherOffset = facing === "right" ? 20 : -20;
+    const head = this.add
+      .circle(0, -42, 12, 0xf8dbc3, 1)
+      .setStrokeStyle(2, 0x1c2748, 0.95);
+
+    const torso = this.add
+      .rectangle(0, -12, 26, 40, jacketColor, 1)
+      .setStrokeStyle(2, 0x1a2646, 0.95);
+
+    const belt = this.add.rectangle(0, 2, 24, 5, 0xe8eefc, 0.92);
+    const legLeft = this.add.rectangle(-8, 18, 9, 20, 0x1a2c57, 1);
+    const legRight = this.add.rectangle(8, 18, 9, 20, 0x1a2c57, 1);
+
+    const launcherOffset = facing === "right" ? 21 : -21;
     const launcher = this.add
-      .rectangle(launcherOffset, -16, 20, 9, 0xd7dfef, 1)
-      .setStrokeStyle(1, 0x1b2746, 0.95);
-    const cordEnd = facing === "right" ? 16 : -16;
+      .rectangle(launcherOffset, -14, 22, 10, 0xe6eefc, 1)
+      .setStrokeStyle(1, 0x1c2748, 0.9);
+
     const cord = this.add
-      .line(launcherOffset + (facing === "right" ? 8 : -8), -16, 0, 0, cordEnd, 16, 0xffffff, 0.9)
+      .line(
+        launcherOffset + (facing === "right" ? 9 : -9),
+        -14,
+        0,
+        0,
+        facing === "right" ? 17 : -17,
+        18,
+        0xffffff,
+        0.95
+      )
       .setLineWidth(2, 2);
 
     const title = this.add
-      .text(0, -66, label, {
-        fontFamily: "Sora, sans-serif",
-        fontSize: "12px",
+      .text(0, -68, label, {
+        fontFamily: "Teko, Rajdhani, sans-serif",
+        fontSize: "15px",
         fontStyle: "700",
-        color: "#e6f0ff"
+        color: "#f1f6ff",
+        stroke: "#0c1834",
+        strokeThickness: 4
       })
       .setOrigin(0.5);
 
     return this.add
-      .container(x, y, [head, torso, legLeft, legRight, launcher, cord, title])
+      .container(x, y, [hair, head, torso, belt, legLeft, legRight, launcher, cord, title])
       .setDepth(8);
   }
 
@@ -184,29 +362,27 @@ export class BeybladeArenaScene extends Phaser.Scene {
     this.playerBubble?.container.destroy(true);
     this.aiBubble?.container.destroy(true);
 
-    this.playerBubble = this.createTrashBubble(180, 92, "left");
-    this.aiBubble = this.createTrashBubble(620, 92, "right");
+    this.playerBubble = this.createTrashBubble(182, 92, "left");
+    this.aiBubble = this.createTrashBubble(618, 92, "right");
   }
 
-  private createTrashBubble(
-    x: number,
-    y: number,
-    side: "left" | "right"
-  ): SpeechBubble {
+  private createTrashBubble(x: number, y: number, side: "left" | "right"): SpeechBubble {
     const bubbleBg = this.add
-      .rectangle(0, 0, 250, 68, 0x12203f, 0.97)
-      .setStrokeStyle(2, 0xe6f0ff, 0.3);
-    const tailX = side === "left" ? -76 : 76;
+      .rectangle(0, 0, 258, 74, 0x102247, 0.96)
+      .setStrokeStyle(2, 0xe8f2ff, 0.38);
+
+    const tailX = side === "left" ? -80 : 80;
     const tail = this.add
-      .triangle(tailX, 30, 0, 0, 14, 0, 7, 14, 0x12203f, 0.97)
-      .setStrokeStyle(2, 0xe6f0ff, 0.3);
+      .triangle(tailX, 33, 0, 0, 14, 0, 7, 15, 0x102247, 0.96)
+      .setStrokeStyle(2, 0xe8f2ff, 0.38);
+
     const text = this.add
       .text(0, -2, "", {
-        fontFamily: "Sora, sans-serif",
-        fontSize: "13px",
+        fontFamily: "Rajdhani, Sora, sans-serif",
+        fontSize: "14px",
         color: "#f7fbff",
         align: "center",
-        wordWrap: { width: 220, useAdvancedWrap: true }
+        wordWrap: { width: 226, useAdvancedWrap: true }
       })
       .setOrigin(0.5);
 
@@ -219,7 +395,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
     return { container, text };
   }
 
-  private showTrashBubble(speaker: "player" | "ai", content: string): void {
+  private showTrashBubble(speaker: ActorId, content: string): void {
     const bubble = speaker === "player" ? this.playerBubble : this.aiBubble;
     if (!bubble) {
       return;
@@ -230,11 +406,11 @@ export class BeybladeArenaScene extends Phaser.Scene {
       return;
     }
 
-    const clip = text.length > 110 ? `${text.slice(0, 107)}...` : text;
-    bubble.text.setText(clip);
+    const clippedText = text.length > 110 ? `${text.slice(0, 107)}...` : text;
+    bubble.text.setText(clippedText);
 
     this.tweens.killTweensOf(bubble.container);
-    bubble.container.setVisible(true).setAlpha(0).setScale(0.88);
+    bubble.container.setVisible(true).setAlpha(0).setScale(0.9);
     this.tweens.add({
       targets: bubble.container,
       alpha: 1,
@@ -280,60 +456,6 @@ export class BeybladeArenaScene extends Phaser.Scene {
     this.hideBubble(this.aiBubble);
   }
 
-  private animateTokens(): void {
-    if (!this.playerToken || !this.aiToken) {
-      return;
-    }
-
-    this.motion.player.dashX *= 0.78;
-    this.motion.player.pushX *= 0.72;
-    this.motion.player.dodgeX *= 0.7;
-    this.motion.ai.dashX *= 0.78;
-    this.motion.ai.pushX *= 0.72;
-    this.motion.ai.dodgeX *= 0.7;
-
-    if (Math.abs(this.motion.player.dashX) < 0.45) {
-      this.motion.player.dashX = 0;
-    }
-    if (Math.abs(this.motion.player.pushX) < 0.45) {
-      this.motion.player.pushX = 0;
-    }
-    if (Math.abs(this.motion.player.dodgeX) < 0.45) {
-      this.motion.player.dodgeX = 0;
-    }
-    if (Math.abs(this.motion.ai.dashX) < 0.45) {
-      this.motion.ai.dashX = 0;
-    }
-    if (Math.abs(this.motion.ai.pushX) < 0.45) {
-      this.motion.ai.pushX = 0;
-    }
-    if (Math.abs(this.motion.ai.dodgeX) < 0.45) {
-      this.motion.ai.dodgeX = 0;
-    }
-
-    const t = this.time.now / 650;
-    const orbit = 30;
-
-    this.playerToken.x =
-      220 +
-      Math.sin(t * 1.8) * orbit +
-      this.motion.player.dashX +
-      this.motion.player.pushX +
-      this.motion.player.dodgeX;
-    this.playerToken.y = 210 + Math.cos(t * 1.2) * orbit;
-
-    this.aiToken.x =
-      580 +
-      Math.sin(t * 1.4 + 1.2) * orbit +
-      this.motion.ai.dashX +
-      this.motion.ai.pushX +
-      this.motion.ai.dodgeX;
-    this.aiToken.y = 210 + Math.cos(t * 1.6 + 0.7) * orbit;
-
-    this.playerToken.x = clamp(this.playerToken.x, 60, 560);
-    this.aiToken.x = clamp(this.aiToken.x, 240, 740);
-  }
-
   private attachListeners(): void {
     this.offCommand = subscribeArenaCommand((command) => {
       this.performAction("player", command, true);
@@ -343,6 +465,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
       if (log.kind !== "trash") {
         return;
       }
+
       if (log.speaker === "player" || log.speaker === "ai") {
         this.showTrashBubble(log.speaker, log.text);
       }
@@ -353,9 +476,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
       this.applyBladeStyles();
       this.renderTrainerModels();
       this.resetFight();
-      this.emitSystem(
-        `New match config: ${BEYBLADES[config.playerBlade].name} vs ${BEYBLADES[config.aiBlade].name}.`
-      );
+      this.emitSystem("Match ready.");
     });
 
     this.offReset = subscribeArenaReset(() => {
@@ -374,68 +495,79 @@ export class BeybladeArenaScene extends Phaser.Scene {
   }
 
   private applyBladeStyles(): void {
-    if (this.playerToken) {
-      this.playerToken.fillColor = this.resolveBladeColor(this.config.playerBlade);
-    }
-
-    if (this.aiToken) {
-      this.aiToken.fillColor = this.resolveBladeColor(this.config.aiBlade);
-    }
+    this.setActorBlade("player", this.config.playerBlade);
+    this.setActorBlade("ai", this.config.aiBlade);
   }
 
-  private getActorLock(actor: "player" | "ai"): number {
+  private setActorBlade(actor: ActorId, bladeId: BeybladeId): void {
+    const color = this.resolveBladeColor(bladeId);
+    const visual = this.visuals[actor];
+
+    visual.blade?.setTexture(this.battleTextureKey(bladeId));
+    visual.glow?.setFillStyle(color, 0.14).setStrokeStyle(3, color, 0.92);
+  }
+
+  private getActorLock(actor: ActorId): number {
     return actor === "player" ? this.playerLockedUntil : this.aiLockedUntil;
   }
 
-  private getActorDodgeLock(actor: "player" | "ai"): number {
-    return actor === "player"
-      ? this.playerDodgeLockedUntil
-      : this.aiDodgeLockedUntil;
+  private getActorDodgeLock(actor: ActorId): number {
+    return actor === "player" ? this.playerDodgeLockedUntil : this.aiDodgeLockedUntil;
   }
 
-  private setActorLock(actor: "player" | "ai", lockUntil: number): void {
+  private setActorLock(actor: ActorId, lockUntil: number): void {
     if (actor === "player") {
       this.playerLockedUntil = lockUntil;
       return;
     }
+
     this.aiLockedUntil = lockUntil;
   }
 
-  private setActorDodgeLock(actor: "player" | "ai", lockUntil: number): void {
+  private setActorDodgeLock(actor: ActorId, lockUntil: number): void {
     if (actor === "player") {
       this.playerDodgeLockedUntil = lockUntil;
       return;
     }
+
     this.aiDodgeLockedUntil = lockUntil;
   }
 
-  private applyCooldown(actor: "player" | "ai", cooldownMs: number): void {
+  private applyCooldown(actor: ActorId, cooldownMs: number): void {
     const nextLock = this.time.now + cooldownMs;
     const currentLock = this.getActorLock(actor);
     this.setActorLock(actor, Math.max(currentLock, nextLock));
   }
 
-  private getDodgeCooldown(actor: "player" | "ai"): number {
+  private getDodgeCooldown(actor: ActorId): number {
     if (actor === "player") {
       return DODGE_COOLDOWN_PLAYER_MS;
     }
 
-    return this.config.difficulty === "easy"
-      ? DODGE_COOLDOWN_AI_MS + 800
-      : DODGE_COOLDOWN_AI_MS;
+    if (this.config.difficulty === "easy") {
+      return DODGE_COOLDOWN_AI_MS + 1200;
+    }
+
+    if (this.config.difficulty === "hard") {
+      return DODGE_COOLDOWN_AI_MS - 140;
+    }
+
+    return DODGE_COOLDOWN_AI_MS;
   }
 
-  private getAttackRecoveryCooldown(actor: "player" | "ai", hit: boolean): number {
+  private getAttackRecoveryCooldown(actor: ActorId, hit: boolean): number {
     if (actor === "player") {
       return hit ? ATTACK_COOLDOWN_HIT_MS : ATTACK_COOLDOWN_MISS_MS;
     }
 
     if (this.config.difficulty === "easy") {
-      return hit ? ATTACK_COOLDOWN_HIT_MS + 760 : ATTACK_COOLDOWN_MISS_MS + 1200;
+      return hit
+        ? ATTACK_COOLDOWN_HIT_MS + 920
+        : ATTACK_COOLDOWN_MISS_MS + 1400;
     }
 
     if (this.config.difficulty === "hard") {
-      return hit ? ATTACK_COOLDOWN_HIT_MS - 70 : ATTACK_COOLDOWN_MISS_MS - 100;
+      return hit ? ATTACK_COOLDOWN_HIT_MS - 90 : ATTACK_COOLDOWN_MISS_MS - 120;
     }
 
     return hit ? ATTACK_COOLDOWN_HIT_MS : ATTACK_COOLDOWN_MISS_MS;
@@ -446,7 +578,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
       return;
     }
 
-    if (this.config.difficulty === "easy" && Math.random() < 0.72) {
+    if (this.config.difficulty === "easy" && Math.random() < 0.68) {
       return;
     }
 
@@ -460,7 +592,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
     this.performAction("ai", action, false);
   }
 
-  private performAction(actor: "player" | "ai", command: GameCommand, fromUser: boolean): void {
+  private performAction(actor: ActorId, command: GameCommand, fromUser: boolean): void {
     if (this.winner) {
       return;
     }
@@ -495,10 +627,11 @@ export class BeybladeArenaScene extends Phaser.Scene {
     if (command === "bit-beast") {
       if (!this.canUseBitBeast(actor)) {
         if (fromUser) {
-          this.emitSystem("Bit Beast is not ready yet.");
+          this.emitSystem("Bit Beast is not ready.");
         }
         return;
       }
+
       this.performBitBeast(actor);
       return;
     }
@@ -506,7 +639,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
     this.performAttack(actor);
   }
 
-  private performDodge(actor: "player" | "ai"): void {
+  private performDodge(actor: ActorId): void {
     const now = this.time.now;
 
     this.playDodgeAnimation(actor);
@@ -519,21 +652,18 @@ export class BeybladeArenaScene extends Phaser.Scene {
     }
 
     this.aiDodgingUntil = now + 320;
-    this.emitLog("ai", "AI slips out of range.", "combat");
+    this.emitLog("ai", "AI dodges.", "combat");
   }
 
-  private performAttack(actor: "player" | "ai"): void {
+  private performAttack(actor: ActorId): void {
     this.playAttackAnimation(actor);
-    this.applyCooldown(actor, ATTACK_STRIKE_DELAY_MS + 50);
+    this.applyCooldown(actor, ATTACK_STRIKE_DELAY_MS + 80);
 
     if (actor === "player") {
-      this.emitLog("player", "Attack launched.", "combat");
+      this.emitLog("player", "Attack!", "combat");
 
-      if (
-        aiMayReactivelyDodge(this.config.difficulty) &&
-        this.time.now > this.aiLockedUntil + 30
-      ) {
-        this.time.delayedCall(130, () => {
+      if (aiMayReactivelyDodge(this.config.difficulty) && this.time.now > this.aiLockedUntil + 40) {
+        this.time.delayedCall(120, () => {
           if (!this.winner) {
             this.performDodge("ai");
           }
@@ -544,30 +674,30 @@ export class BeybladeArenaScene extends Phaser.Scene {
       return;
     }
 
-    this.emitLog("ai", "AI attacks with pressure.", "combat");
+    this.emitLog("ai", "AI attacks.", "combat");
     this.time.delayedCall(ATTACK_STRIKE_DELAY_MS, () => this.resolveAttack("ai"));
   }
 
-  private performBitBeast(actor: "player" | "ai"): void {
+  private performBitBeast(actor: ActorId): void {
     const now = this.time.now;
     this.playBitBeastCast(actor);
 
     if (actor === "player") {
       this.playerLockedUntil = now + 1400;
       this.playerBit = 0;
-      this.emitLog("player", `${BEYBLADES[this.config.playerBlade].bitBeast} erupts!`, "combat");
+      this.emitLog("player", `${BEYBLADES[this.config.playerBlade].bitBeast}!`, "combat");
       this.time.delayedCall(250, () => this.applyGuaranteedDamage("player", 30));
       return;
     }
 
     this.aiLockedUntil = now + 1400;
     this.aiBit = 0;
-    this.emitLog("ai", `${BEYBLADES[this.config.aiBlade].bitBeast} overwhelms the arena!`, "combat");
+    this.emitLog("ai", `${BEYBLADES[this.config.aiBlade].bitBeast}!`, "combat");
     emitTauntRequest({ trigger: "ai-bit-beast" });
     this.time.delayedCall(250, () => this.applyGuaranteedDamage("ai", 30));
   }
 
-  private resolveAttack(attacker: "player" | "ai"): void {
+  private resolveAttack(attacker: ActorId): void {
     if (this.winner) {
       return;
     }
@@ -580,7 +710,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
         this.playerBit = clamp(this.playerBit + 10, 0, MAX_BIT);
         this.aiBit = clamp(this.aiBit + 14, 0, MAX_BIT);
         this.showMissEffect("ai");
-        this.emitLog("system", "Your attack missed. AI dodged cleanly.", "combat");
+        this.emitLog("system", "Missed. AI dodged.", "combat");
         emitTauntRequest({ trigger: "ai-dodge" });
         this.broadcastState();
         return;
@@ -591,7 +721,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
       this.aiHp = clamp(this.aiHp - damage, 0, MAX_HP);
       this.playerBit = clamp(this.playerBit + 18, 0, MAX_BIT);
       this.showImpactEffect("ai", damage, false);
-      this.emitLog("system", `Hit confirmed for ${damage}.`, "combat");
+      this.emitLog("system", `Hit for ${damage}.`, "combat");
       this.maybeFinish();
       this.broadcastState();
       return;
@@ -602,7 +732,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
       this.aiBit = clamp(this.aiBit + 10, 0, MAX_BIT);
       this.playerBit = clamp(this.playerBit + 14, 0, MAX_BIT);
       this.showMissEffect("player");
-      this.emitLog("system", "Dodge successful. You avoided the hit.", "combat");
+      this.emitLog("system", "Dodge successful.", "combat");
       this.broadcastState();
       return;
     }
@@ -616,13 +746,13 @@ export class BeybladeArenaScene extends Phaser.Scene {
     this.playerHp = clamp(this.playerHp - damage, 0, MAX_HP);
     this.aiBit = clamp(this.aiBit + 18, 0, MAX_BIT);
     this.showImpactEffect("player", damage, false);
-    this.emitLog("system", `AI lands ${damage} damage.`, "combat");
+    this.emitLog("system", `AI hit for ${damage}.`, "combat");
     emitTauntRequest({ trigger: "ai-hit" });
     this.maybeFinish();
     this.broadcastState();
   }
 
-  private applyGuaranteedDamage(attacker: "player" | "ai", damage: number): void {
+  private applyGuaranteedDamage(attacker: ActorId, damage: number): void {
     if (this.winner) {
       return;
     }
@@ -630,7 +760,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
     if (attacker === "player") {
       this.aiHp = clamp(this.aiHp - damage, 0, MAX_HP);
       this.showImpactEffect("ai", damage, true);
-      this.emitLog("system", `Bit Beast crushes AI for ${damage}.`, "combat");
+      this.emitLog("system", `Bit Beast hit AI for ${damage}.`, "combat");
     } else {
       const scaledDamage = Math.max(
         10,
@@ -638,117 +768,142 @@ export class BeybladeArenaScene extends Phaser.Scene {
       );
       this.playerHp = clamp(this.playerHp - scaledDamage, 0, MAX_HP);
       this.showImpactEffect("player", scaledDamage, true);
-      this.emitLog("system", `AI Bit Beast hits you for ${scaledDamage}.`, "combat");
+      this.emitLog("system", `AI Bit Beast hit for ${scaledDamage}.`, "combat");
     }
 
     this.maybeFinish();
     this.broadcastState();
   }
 
-  private getToken(actor: "player" | "ai"): Phaser.GameObjects.Arc | undefined {
-    return actor === "player" ? this.playerToken : this.aiToken;
+  private getToken(actor: ActorId): Phaser.GameObjects.Image | undefined {
+    return this.visuals[actor].blade;
   }
 
-  private getMotion(actor: "player" | "ai"): MotionOffsets {
-    return actor === "player" ? this.motion.player : this.motion.ai;
+  private getActorMotion(actor: ActorId): ActorMotion {
+    return this.motion[actor];
   }
 
-  private playAttackAnimation(actor: "player" | "ai"): void {
+  private playAttackAnimation(actor: ActorId): void {
     const token = this.getToken(actor);
+    const state = this.getActorMotion(actor);
+    const direction = actor === "player" ? 1 : -1;
+
+    this.tweens.killTweensOf(state);
+    state.attackOffsetX = 0;
+
+    this.tweens.add({
+      targets: state,
+      attackOffsetX: direction * ATTACK_LUNGE_DISTANCE,
+      duration: ATTACK_LUNGE_IN_MS,
+      ease: "Cubic.Out",
+      yoyo: true,
+      hold: ATTACK_LUNGE_HOLD_MS,
+      onComplete: () => {
+        state.attackOffsetX = 0;
+      }
+    });
+
     if (!token) {
       return;
     }
 
-    const motion = this.getMotion(actor);
-    const direction = actor === "player" ? 1 : -1;
-
     this.tweens.killTweensOf(token);
-    token.setStrokeStyle(4, 0xffffff, 0.95);
-
     this.tweens.add({
       targets: token,
-      scaleX: 1.33,
-      scaleY: 1.33,
+      scaleX: 1.18,
+      scaleY: 1.18,
       duration: 110,
       yoyo: true,
       ease: "Sine.Out",
       onComplete: () => {
         token.setScale(1);
-        token.setStrokeStyle(0, 0x000000, 0);
       }
     });
-    motion.dashX = direction * ATTACK_LUNGE_DISTANCE;
   }
 
-  private playDodgeAnimation(actor: "player" | "ai"): void {
+  private playDodgeAnimation(actor: ActorId): void {
     const token = this.getToken(actor);
+    const state = this.getActorMotion(actor);
+    const horizontal = actor === "player" ? -74 : 74;
+    const vertical = actor === "player" ? -36 : 36;
+
+    this.tweens.killTweensOf(state);
+    state.dodgeOffsetX = 0;
+    state.dodgeOffsetY = 0;
+
+    this.tweens.add({
+      targets: state,
+      dodgeOffsetX: horizontal,
+      dodgeOffsetY: vertical,
+      duration: 94,
+      ease: "Sine.Out",
+      yoyo: true,
+      hold: 36,
+      onComplete: () => {
+        state.dodgeOffsetX = 0;
+        state.dodgeOffsetY = 0;
+      }
+    });
+
     if (!token) {
       return;
     }
 
-    const motion = this.getMotion(actor);
-    const direction = actor === "player" ? -1 : 1;
-
     this.tweens.killTweensOf(token);
     this.tweens.add({
       targets: token,
-      alpha: 0.45,
+      alpha: 0.55,
       duration: 90,
       yoyo: true,
       repeat: 1,
       ease: "Sine.InOut",
       onComplete: () => {
-        token.setAlpha(1);
+        token.setAlpha(1).setScale(1);
       }
     });
-    motion.dodgeX = direction * 96;
   }
 
-  private playBitBeastCast(actor: "player" | "ai"): void {
+  private playBitBeastCast(actor: ActorId): void {
     const token = this.getToken(actor);
     if (!token) {
       return;
     }
 
-    const auraColor = actor === "player" ? 0x4bc3ff : 0xff7a45;
-    const aura = this.add.circle(token.x, token.y, 18, auraColor, 0.35).setDepth(16);
+    const auraColor = actor === "player" ? 0x55beff : 0xff8753;
+    const aura = this.add.circle(token.x, token.y, 18, auraColor, 0.34).setDepth(16);
 
     this.tweens.add({
       targets: aura,
       scaleX: 8,
       scaleY: 8,
       alpha: 0,
-      duration: 520,
+      duration: 540,
       ease: "Cubic.Out",
       onComplete: () => {
         aura.destroy();
       }
     });
 
-    this.cameras.main.shake(90, 0.0042);
+    this.cameras.main.shake(100, 0.0044);
   }
 
-  private showImpactEffect(
-    target: "player" | "ai",
-    damage: number,
-    bitBeast: boolean
-  ): void {
+  private showImpactEffect(target: ActorId, damage: number, bitBeast: boolean): void {
     const token = this.getToken(target);
     if (!token) {
       return;
     }
 
-    const flashColor = target === "player" ? 0xff5a7a : 0x4bc084;
-    const burstScale = bitBeast ? 4.5 : 3.2;
-    const motion = this.getMotion(target);
+    const flashColor = target === "player" ? 0xff5d7f : 0x4fd48c;
+    const burstScale = bitBeast ? 4.6 : 3.3;
+    const state = this.getActorMotion(target);
     const pushDirection = target === "player" ? -1 : 1;
-    const pushAmount = bitBeast ? 92 : 56;
+    const pushAmount = bitBeast ? 92 : 64;
 
-    const burst = this.add.circle(token.x, token.y, 12, flashColor, 0.7).setDepth(18);
+    const burst = this.add.circle(token.x, token.y, 12, flashColor, 0.72).setDepth(18);
     const damageText = this.add
       .text(token.x, token.y - 34, `-${damage}`, {
-        fontFamily: "Sora, sans-serif",
-        fontSize: bitBeast ? "24px" : "20px",
+        fontFamily: "Teko, Rajdhani, sans-serif",
+        fontSize: bitBeast ? "28px" : "24px",
         fontStyle: "700",
         color: "#ffffff",
         stroke: "#0b1730",
@@ -762,7 +917,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
       scaleX: burstScale,
       scaleY: burstScale,
       alpha: 0,
-      duration: bitBeast ? 420 : 290,
+      duration: bitBeast ? 430 : 300,
       ease: "Cubic.Out",
       onComplete: () => {
         burst.destroy();
@@ -771,32 +926,32 @@ export class BeybladeArenaScene extends Phaser.Scene {
 
     this.tweens.add({
       targets: damageText,
-      y: damageText.y - 28,
+      y: damageText.y - 30,
       alpha: 0,
-      duration: bitBeast ? 620 : 430,
+      duration: bitBeast ? 620 : 440,
       ease: "Sine.Out",
       onComplete: () => {
         damageText.destroy();
       }
     });
 
-    motion.pushX = pushDirection * pushAmount;
+    state.pushOffsetX = pushDirection * pushAmount;
 
-    this.cameras.main.shake(bitBeast ? 130 : 80, bitBeast ? 0.0062 : 0.0032);
+    this.cameras.main.shake(bitBeast ? 132 : 84, bitBeast ? 0.006 : 0.0032);
   }
 
-  private showMissEffect(target: "player" | "ai"): void {
+  private showMissEffect(target: ActorId): void {
     const token = this.getToken(target);
     if (!token) {
       return;
     }
 
     const missText = this.add
-      .text(token.x, token.y - 30, "MISS", {
-        fontFamily: "Sora, sans-serif",
-        fontSize: "16px",
+      .text(token.x, token.y - 32, "MISS", {
+        fontFamily: "Teko, Rajdhani, sans-serif",
+        fontSize: "22px",
         fontStyle: "700",
-        color: "#ffd84d",
+        color: "#ffe16c",
         stroke: "#12203f",
         strokeThickness: 4
       })
@@ -807,7 +962,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
       targets: missText,
       y: missText.y - 18,
       alpha: 0,
-      duration: 360,
+      duration: 370,
       ease: "Sine.Out",
       onComplete: () => {
         missText.destroy();
@@ -815,18 +970,18 @@ export class BeybladeArenaScene extends Phaser.Scene {
     });
   }
 
-  private canUseBitBeast(actor: "player" | "ai"): boolean {
+  private canUseBitBeast(actor: ActorId): boolean {
     return actor === "player" ? this.playerBit >= MAX_BIT : this.aiBit >= MAX_BIT;
   }
 
   private maybeFinish(): void {
     if (this.playerHp <= 0) {
       this.winner = "ai";
-      this.emitSystem("KO. AI takes the match.");
+      this.emitSystem("KO. AI wins.");
       emitTauntRequest({ trigger: "player-miss" });
     } else if (this.aiHp <= 0) {
       this.winner = "player";
-      this.emitSystem("KO. You win the match.");
+      this.emitSystem("KO. You win.");
     }
   }
 
@@ -843,15 +998,26 @@ export class BeybladeArenaScene extends Phaser.Scene {
     this.playerDodgingUntil = 0;
     this.aiDodgingUntil = 0;
     this.playerCooldownNoticeAt = 0;
-    this.motion.player.dashX = 0;
-    this.motion.player.pushX = 0;
-    this.motion.player.dodgeX = 0;
-    this.motion.ai.dashX = 0;
-    this.motion.ai.pushX = 0;
-    this.motion.ai.dodgeX = 0;
     this.aiThinkClock = 0;
     this.hideAllBubbles();
+
+    this.resetActorMotion("player");
+    this.resetActorMotion("ai");
+
+    const playerToken = this.getToken("player");
+    const aiToken = this.getToken("ai");
+    playerToken?.setScale(1).setAlpha(1);
+    aiToken?.setScale(1).setAlpha(1);
+
     this.broadcastState();
+  }
+
+  private resetActorMotion(actor: ActorId): void {
+    const state = this.motion[actor];
+    state.attackOffsetX = 0;
+    state.dodgeOffsetX = 0;
+    state.dodgeOffsetY = 0;
+    state.pushOffsetX = 0;
   }
 
   private emitLog(

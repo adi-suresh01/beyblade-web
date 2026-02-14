@@ -25,6 +25,8 @@ export function useSpeechCommand({
   onTrashTalk
 }: UseSpeechCommandParams) {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const keepListeningRef = useRef(false);
+  const restartTimerRef = useRef<number | null>(null);
   const lastCommandRef = useRef<"attack" | "dodge" | "bit-beast" | null>(null);
   const lastCommandAtRef = useRef(0);
   const lastTrashRef = useRef("");
@@ -35,7 +37,16 @@ export function useSpeechCommand({
 
   const supported = useMemo(() => Boolean(getSpeechRecognitionCtor()), []);
 
+  const clearRestartTimer = useCallback(() => {
+    if (restartTimerRef.current !== null) {
+      window.clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
+    }
+  }, []);
+
   const start = useCallback(() => {
+    keepListeningRef.current = true;
+
     if (isListening) {
       return;
     }
@@ -67,6 +78,30 @@ export function useSpeechCommand({
 
     recognition.onend = () => {
       setIsListening(false);
+      if (!keepListeningRef.current) {
+        return;
+      }
+
+      clearRestartTimer();
+      restartTimerRef.current = window.setTimeout(() => {
+        if (!keepListeningRef.current) {
+          return;
+        }
+
+        try {
+          recognition.start();
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            /already started|start/i.test(error.message)
+          ) {
+            return;
+          }
+          const message =
+            error instanceof Error ? error.message : "Unable to restart speech recognition";
+          setError(message);
+        }
+      }, 180);
     };
 
     recognition.onerror = (event) => {
@@ -138,18 +173,22 @@ export function useSpeechCommand({
         error instanceof Error ? error.message : "Unable to start speech recognition";
       setError(message);
     }
-  }, [isListening, onCommand, onTrashTalk]);
+  }, [clearRestartTimer, isListening, onCommand, onTrashTalk]);
 
   const stop = useCallback(() => {
+    keepListeningRef.current = false;
+    clearRestartTimer();
     recognitionRef.current?.stop();
-  }, []);
+  }, [clearRestartTimer]);
 
   useEffect(() => {
     return () => {
+      keepListeningRef.current = false;
+      clearRestartTimer();
       recognitionRef.current?.stop();
       recognitionRef.current = null;
     };
-  }, []);
+  }, [clearRestartTimer]);
 
   return {
     supported,
