@@ -574,9 +574,13 @@ export class BeybladeArenaScene extends Phaser.Scene {
       this.showImpactEffect("ai", damage, true);
       this.emitLog("system", `Bit Beast crushes AI for ${damage}.`, "combat");
     } else {
-      this.playerHp = clamp(this.playerHp - damage, 0, MAX_HP);
-      this.showImpactEffect("player", damage, true);
-      this.emitLog("system", `AI Bit Beast hits you for ${damage}.`, "combat");
+      const scaledDamage = Math.max(
+        10,
+        Math.round(damage * DIFFICULTY_AI_DAMAGE_MULTIPLIER[this.config.difficulty])
+      );
+      this.playerHp = clamp(this.playerHp - scaledDamage, 0, MAX_HP);
+      this.showImpactEffect("player", scaledDamage, true);
+      this.emitLog("system", `AI Bit Beast hits you for ${scaledDamage}.`, "combat");
     }
 
     this.maybeFinish();
