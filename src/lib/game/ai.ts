@@ -26,7 +26,7 @@ export function decideAiAction(input: DecideActionInput): GameCommand {
       return "bit-beast";
     }
 
-    return Math.random() < 0.66 ? "dodge" : "attack";
+    return Math.random() < 0.78 ? "dodge" : "attack";
   }
 
   if (input.aiBit >= MAX_BIT) {

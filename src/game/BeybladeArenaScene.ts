@@ -430,7 +430,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
       return;
     }
 
-    if (this.config.difficulty === "easy" && Math.random() < 0.28) {
+    if (this.config.difficulty === "easy" && Math.random() < 0.55) {
       return;
     }
 
@@ -637,7 +637,6 @@ export class BeybladeArenaScene extends Phaser.Scene {
     const direction = actor === "player" ? 1 : -1;
 
     this.tweens.killTweensOf(token);
-    this.tweens.killTweensOf(motion);
     token.setStrokeStyle(4, 0xffffff, 0.95);
 
     this.tweens.add({
@@ -652,18 +651,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
         token.setStrokeStyle(0, 0x000000, 0);
       }
     });
-
-    this.tweens.add({
-      targets: motion,
-      dashX: direction * ATTACK_LUNGE_DISTANCE,
-      duration: 130,
-      hold: 95,
-      ease: "Cubic.Out",
-      yoyo: true,
-      onComplete: () => {
-        motion.dashX = 0;
-      }
-    });
+    motion.dashX = direction * ATTACK_LUNGE_DISTANCE;
   }
 
   private playDodgeAnimation(actor: "player" | "ai"): void {
@@ -676,7 +664,6 @@ export class BeybladeArenaScene extends Phaser.Scene {
     const direction = actor === "player" ? -1 : 1;
 
     this.tweens.killTweensOf(token);
-    this.tweens.killTweensOf(motion);
     this.tweens.add({
       targets: token,
       alpha: 0.45,
@@ -688,18 +675,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
         token.setAlpha(1);
       }
     });
-
-    this.tweens.add({
-      targets: motion,
-      dodgeX: direction * 74,
-      duration: 100,
-      hold: 120,
-      yoyo: true,
-      ease: "Sine.Out",
-      onComplete: () => {
-        motion.dodgeX = 0;
-      }
-    });
+    motion.dodgeX = direction * 96;
   }
 
   private playBitBeastCast(actor: "player" | "ai"): void {
@@ -740,7 +716,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
     const burstScale = bitBeast ? 4.5 : 3.2;
     const motion = this.getMotion(target);
     const pushDirection = target === "player" ? -1 : 1;
-    const pushAmount = bitBeast ? 58 : 34;
+    const pushAmount = bitBeast ? 92 : 56;
 
     const burst = this.add.circle(token.x, token.y, 12, flashColor, 0.7).setDepth(18);
     const damageText = this.add
@@ -778,17 +754,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
       }
     });
 
-    this.tweens.killTweensOf(motion);
-    this.tweens.add({
-      targets: motion,
-      pushX: pushDirection * pushAmount,
-      duration: 95,
-      ease: "Quad.Out",
-      yoyo: true,
-      onComplete: () => {
-        motion.pushX = 0;
-      }
-    });
+    motion.pushX = pushDirection * pushAmount;
 
     this.cameras.main.shake(bitBeast ? 130 : 80, bitBeast ? 0.0062 : 0.0032);
   }

@@ -84,7 +84,6 @@ export function BeybladeGameClient() {
   const [countdown, setCountdown] = useState(COUNTDOWN_START);
   const [manualTrash, setManualTrash] = useState("");
   const [isTalking, setIsTalking] = useState(false);
-  const [battleVoiceAutoStarted, setBattleVoiceAutoStarted] = useState(false);
 
   const inBattle = matchPhase === "battle";
   const inLaunchSequence = matchPhase === "countdown" || matchPhase === "await-launch";
@@ -232,7 +231,6 @@ export function BeybladeGameClient() {
     stopLaunchListening();
     clearLogs();
     setManualTrash("");
-    setBattleVoiceAutoStarted(false);
     setMatchPhase("setup");
     setCountdown(COUNTDOWN_START);
   }, [clearLogs, stop, stopLaunchListening]);
@@ -242,7 +240,6 @@ export function BeybladeGameClient() {
     stopLaunchListening();
     clearLogs();
     setManualTrash("");
-    setBattleVoiceAutoStarted(false);
     setAiBlade(pickRandomAiBlade(playerBlade));
     setCountdown(COUNTDOWN_START);
     setMatchPhase("countdown");
@@ -285,19 +282,10 @@ export function BeybladeGameClient() {
   ]);
 
   useEffect(() => {
-    if (!inBattle) {
-      if (isListening) {
-        stop();
-      }
-      setBattleVoiceAutoStarted(false);
-      return;
+    if (!inBattle && isListening) {
+      stop();
     }
-
-    if (supported && !battleVoiceAutoStarted) {
-      start();
-      setBattleVoiceAutoStarted(true);
-    }
-  }, [battleVoiceAutoStarted, inBattle, isListening, start, stop, supported]);
+  }, [inBattle, isListening, stop]);
 
   useEffect(() => {
     if (!inBattle) {
@@ -311,10 +299,31 @@ export function BeybladeGameClient() {
 
       const key = event.key.toLowerCase();
       if (key === "a") {
+        emitArenaLog({
+          id: makeId(),
+          kind: "combat",
+          speaker: "system",
+          text: "Keyboard command: ATTACK",
+          timestamp: Date.now()
+        });
         sendArenaCommand("attack");
       } else if (key === "d") {
+        emitArenaLog({
+          id: makeId(),
+          kind: "combat",
+          speaker: "system",
+          text: "Keyboard command: DODGE",
+          timestamp: Date.now()
+        });
         sendArenaCommand("dodge");
       } else if (key === "b") {
+        emitArenaLog({
+          id: makeId(),
+          kind: "combat",
+          speaker: "system",
+          text: "Keyboard command: BIT-BEAST",
+          timestamp: Date.now()
+        });
         sendArenaCommand("bit-beast");
       }
     };
