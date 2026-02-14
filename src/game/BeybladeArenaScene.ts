@@ -43,7 +43,7 @@ const ATTACK_COOLDOWN_HIT_MS = 340;
 const ATTACK_COOLDOWN_MISS_MS = 980;
 const DODGE_COOLDOWN_PLAYER_MS = 760;
 const DODGE_COOLDOWN_AI_MS = 860;
-const ATTACK_LUNGE_DISTANCE = 170;
+const ATTACK_LUNGE_DISTANCE = 340;
 
 export class BeybladeArenaScene extends Phaser.Scene {
   private config: ArenaConfig = DEFAULT_ARENA_CONFIG;
@@ -69,6 +69,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
   private aiLockedUntil = 0;
   private playerDodgingUntil = 0;
   private aiDodgingUntil = 0;
+  private playerCooldownNoticeAt = 0;
   private motion: { player: MotionOffsets; ai: MotionOffsets } = {
     player: { dashX: 0, pushX: 0, dodgeX: 0 },
     ai: { dashX: 0, pushX: 0, dodgeX: 0 }
@@ -282,6 +283,32 @@ export class BeybladeArenaScene extends Phaser.Scene {
       return;
     }
 
+    this.motion.player.dashX *= 0.78;
+    this.motion.player.pushX *= 0.72;
+    this.motion.player.dodgeX *= 0.7;
+    this.motion.ai.dashX *= 0.78;
+    this.motion.ai.pushX *= 0.72;
+    this.motion.ai.dodgeX *= 0.7;
+
+    if (Math.abs(this.motion.player.dashX) < 0.45) {
+      this.motion.player.dashX = 0;
+    }
+    if (Math.abs(this.motion.player.pushX) < 0.45) {
+      this.motion.player.pushX = 0;
+    }
+    if (Math.abs(this.motion.player.dodgeX) < 0.45) {
+      this.motion.player.dodgeX = 0;
+    }
+    if (Math.abs(this.motion.ai.dashX) < 0.45) {
+      this.motion.ai.dashX = 0;
+    }
+    if (Math.abs(this.motion.ai.pushX) < 0.45) {
+      this.motion.ai.pushX = 0;
+    }
+    if (Math.abs(this.motion.ai.dodgeX) < 0.45) {
+      this.motion.ai.dodgeX = 0;
+    }
+
     const t = this.time.now / 650;
     const orbit = 30;
 
@@ -301,8 +328,8 @@ export class BeybladeArenaScene extends Phaser.Scene {
       this.motion.ai.dodgeX;
     this.aiToken.y = 210 + Math.cos(t * 1.6 + 0.7) * orbit;
 
-    this.playerToken.x = clamp(this.playerToken.x, 80, 430);
-    this.aiToken.x = clamp(this.aiToken.x, 370, 720);
+    this.playerToken.x = clamp(this.playerToken.x, 60, 560);
+    this.aiToken.x = clamp(this.aiToken.x, 240, 740);
   }
 
   private attachListeners(): void {
@@ -426,6 +453,11 @@ export class BeybladeArenaScene extends Phaser.Scene {
     const lock = this.getActorLock(actor);
 
     if (now < lock) {
+      if (fromUser && now > this.playerCooldownNoticeAt) {
+        const waitSec = ((lock - now) / 1000).toFixed(1);
+        this.emitSystem(`Cooldown active (${waitSec}s).`);
+        this.playerCooldownNoticeAt = now + 320;
+      }
       return;
     }
 
@@ -816,6 +848,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
     this.aiLockedUntil = 0;
     this.playerDodgingUntil = 0;
     this.aiDodgingUntil = 0;
+    this.playerCooldownNoticeAt = 0;
     this.motion.player.dashX = 0;
     this.motion.player.pushX = 0;
     this.motion.player.dodgeX = 0;
