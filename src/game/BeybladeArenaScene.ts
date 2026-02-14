@@ -405,7 +405,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
     }
 
     return this.config.difficulty === "easy"
-      ? DODGE_COOLDOWN_AI_MS + 240
+      ? DODGE_COOLDOWN_AI_MS + 800
       : DODGE_COOLDOWN_AI_MS;
   }
 
@@ -415,7 +415,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
     }
 
     if (this.config.difficulty === "easy") {
-      return hit ? ATTACK_COOLDOWN_HIT_MS + 220 : ATTACK_COOLDOWN_MISS_MS + 260;
+      return hit ? ATTACK_COOLDOWN_HIT_MS + 760 : ATTACK_COOLDOWN_MISS_MS + 1200;
     }
 
     if (this.config.difficulty === "hard") {
@@ -430,7 +430,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
       return;
     }
 
-    if (this.config.difficulty === "easy" && Math.random() < 0.55) {
+    if (this.config.difficulty === "easy" && Math.random() < 0.72) {
       return;
     }
 

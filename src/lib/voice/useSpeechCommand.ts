@@ -32,6 +32,10 @@ export function useSpeechCommand({
   const supported = useMemo(() => Boolean(getSpeechRecognitionCtor()), []);
 
   const start = useCallback(() => {
+    if (isListening) {
+      return;
+    }
+
     const Ctor = getSpeechRecognitionCtor();
     if (!Ctor) {
       setError("SpeechRecognition is not available in this browser.");
@@ -42,7 +46,7 @@ export function useSpeechCommand({
       const recognition = new Ctor();
       recognition.lang = "en-US";
       recognition.continuous = true;
-      recognition.interimResults = false;
+      recognition.interimResults = true;
       recognition.maxAlternatives = 1;
       recognitionRef.current = recognition;
     }
@@ -68,7 +72,10 @@ export function useSpeechCommand({
     recognition.onresult = (event) => {
       const results = Array.from(event.results)
         .slice(event.resultIndex)
-        .map((result) => result[0]?.transcript ?? "")
+        .map((result) => {
+          const first = result[0];
+          return first?.transcript ?? "";
+        })
         .join(" ")
         .trim();
 
@@ -89,11 +96,17 @@ export function useSpeechCommand({
     try {
       recognition.start();
     } catch (error) {
+      if (
+        error instanceof Error &&
+        /already started|start/i.test(error.message)
+      ) {
+        return;
+      }
       const message =
         error instanceof Error ? error.message : "Unable to start speech recognition";
       setError(message);
     }
-  }, [onCommand, onTrashTalk]);
+  }, [isListening, onCommand, onTrashTalk]);
 
   const stop = useCallback(() => {
     recognitionRef.current?.stop();
