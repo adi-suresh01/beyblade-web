@@ -373,7 +373,7 @@ export function BeybladeGameClient() {
                 <p className="muted">3... 2... 1...</p>
               ) : (
                 <>
-                  <p className="muted">Say "let it rip" to launch the battle.</p>
+                  <p className="muted">Say let it rip to launch the battle.</p>
                   <div className="launch-controls">
                     {launchSupported ? (
                       <button onClick={isLaunchListening ? stopLaunchListening : startLaunchListening}>
@@ -515,8 +515,8 @@ export function BeybladeGameClient() {
             </div>
 
             <p className="muted">
-              Voice input supports both commands and trash talk. Commands: "attack", "dodge",
-              "bit beast".
+              Voice input supports both commands and trash talk. Commands: attack, dodge, bit
+              beast.
             </p>
             {lastTranscript ? <p className="muted">Last transcript: {lastTranscript}</p> : null}
             {error ? <p className="error">Speech error: {error}</p> : null}
