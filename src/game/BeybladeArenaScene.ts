@@ -623,9 +623,10 @@ export class BeybladeArenaScene extends Phaser.Scene {
 
     this.tweens.add({
       targets: motion,
-      dashX: direction * 72,
-      duration: 120,
-      ease: "Quad.Out",
+      dashX: direction * ATTACK_LUNGE_DISTANCE,
+      duration: 130,
+      hold: 95,
+      ease: "Cubic.Out",
       yoyo: true,
       onComplete: () => {
         motion.dashX = 0;
