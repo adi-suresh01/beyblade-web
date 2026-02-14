@@ -27,6 +27,90 @@ function normalize(input: string): string {
     .trim();
 }
 
+function levenshteinDistance(a: string, b: string): number {
+  const rows = a.length + 1;
+  const cols = b.length + 1;
+  const matrix: number[][] = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+  for (let i = 0; i < rows; i += 1) {
+    matrix[i][0] = i;
+  }
+
+  for (let j = 0; j < cols; j += 1) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i < rows; i += 1) {
+    for (let j = 1; j < cols; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+
+  return matrix[rows - 1][cols - 1];
+}
+
+function similarEnough(source: string, target: string, threshold: number): boolean {
+  if (!source || !target) {
+    return false;
+  }
+
+  const distance = levenshteinDistance(source, target);
+  const longest = Math.max(source.length, target.length);
+  const similarity = 1 - distance / longest;
+  return similarity >= threshold;
+}
+
+function phraseMatches(transcript: string, expectedPhrase: string): boolean {
+  if (!transcript || !expectedPhrase) {
+    return false;
+  }
+
+  if (transcript.includes(expectedPhrase)) {
+    return true;
+  }
+
+  if (expectedPhrase === "let it rip") {
+    const quickVariants = [
+      "let it trip",
+      "let a rip",
+      "let er rip",
+      "let her rip",
+      "lit it rip",
+      "let rip"
+    ];
+
+    if (quickVariants.some((variant) => transcript.includes(variant))) {
+      return true;
+    }
+  }
+
+  const transcriptWords = transcript.split(" ").filter(Boolean);
+  const expectedWords = expectedPhrase.split(" ").filter(Boolean);
+
+  if (!transcriptWords.length || !expectedWords.length) {
+    return false;
+  }
+
+  const minWindow = Math.max(1, expectedWords.length - 1);
+  const maxWindow = expectedWords.length + 1;
+
+  for (let size = minWindow; size <= maxWindow; size += 1) {
+    for (let i = 0; i + size <= transcriptWords.length; i += 1) {
+      const segment = transcriptWords.slice(i, i + size).join(" ");
+      if (similarEnough(segment, expectedPhrase, 0.62)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 export function useSpeechPhrase({ phrase, onMatch }: UseSpeechPhraseParams) {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const [isListening, setIsListening] = useState(false);
@@ -83,7 +167,7 @@ export function useSpeechPhrase({ phrase, onMatch }: UseSpeechPhraseParams) {
 
       setLastTranscript(results);
       const normalized = normalize(results);
-      if (normalized.includes(expectedPhrase)) {
+      if (phraseMatches(normalized, expectedPhrase)) {
         onMatch(results);
         recognition.stop();
       }

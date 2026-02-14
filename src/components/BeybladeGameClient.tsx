@@ -84,6 +84,7 @@ export function BeybladeGameClient() {
   const [countdown, setCountdown] = useState(COUNTDOWN_START);
   const [manualTrash, setManualTrash] = useState("");
   const [isTalking, setIsTalking] = useState(false);
+  const [battleVoiceAutoStarted, setBattleVoiceAutoStarted] = useState(false);
 
   const inBattle = matchPhase === "battle";
   const inLaunchSequence = matchPhase === "countdown" || matchPhase === "await-launch";
@@ -209,6 +210,13 @@ export function BeybladeGameClient() {
       if (!inBattle) {
         return;
       }
+      emitArenaLog({
+        id: makeId(),
+        kind: "combat",
+        speaker: "system",
+        text: `Voice command recognized: ${command.toUpperCase()}`,
+        timestamp: Date.now()
+      });
       sendArenaCommand(command);
     },
     onTrashTalk: (text) => {
@@ -224,6 +232,7 @@ export function BeybladeGameClient() {
     stopLaunchListening();
     clearLogs();
     setManualTrash("");
+    setBattleVoiceAutoStarted(false);
     setMatchPhase("setup");
     setCountdown(COUNTDOWN_START);
   }, [clearLogs, stop, stopLaunchListening]);
@@ -233,6 +242,7 @@ export function BeybladeGameClient() {
     stopLaunchListening();
     clearLogs();
     setManualTrash("");
+    setBattleVoiceAutoStarted(false);
     setAiBlade(pickRandomAiBlade(playerBlade));
     setCountdown(COUNTDOWN_START);
     setMatchPhase("countdown");
@@ -273,6 +283,21 @@ export function BeybladeGameClient() {
     startLaunchListening,
     stopLaunchListening
   ]);
+
+  useEffect(() => {
+    if (!inBattle) {
+      if (isListening) {
+        stop();
+      }
+      setBattleVoiceAutoStarted(false);
+      return;
+    }
+
+    if (supported && !battleVoiceAutoStarted) {
+      start();
+      setBattleVoiceAutoStarted(true);
+    }
+  }, [battleVoiceAutoStarted, inBattle, isListening, start, stop, supported]);
 
   useEffect(() => {
     if (!inBattle) {

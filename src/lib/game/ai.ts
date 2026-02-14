@@ -21,6 +21,14 @@ export function aiActionDelay(difficulty: Difficulty): number {
 }
 
 export function decideAiAction(input: DecideActionInput): GameCommand {
+  if (input.difficulty === "easy") {
+    if (input.aiBit >= MAX_BIT && Math.random() < 0.22) {
+      return "bit-beast";
+    }
+
+    return Math.random() < 0.66 ? "dodge" : "attack";
+  }
+
   if (input.aiBit >= MAX_BIT) {
     return "bit-beast";
   }

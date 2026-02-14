@@ -11,12 +11,23 @@ import {
   subscribeArenaLog,
   subscribeArenaReset
 } from "@/lib/game/arenaBus";
-import { DEFAULT_ARENA_CONFIG, MAX_BIT, MAX_HP } from "@/lib/game/constants";
+import {
+  DEFAULT_ARENA_CONFIG,
+  DIFFICULTY_AI_DAMAGE_MULTIPLIER,
+  MAX_BIT,
+  MAX_HP
+} from "@/lib/game/constants";
 import { ArenaConfig, ArenaLog, GameCommand } from "@/lib/game/types";
 
 interface SpeechBubble {
   container: Phaser.GameObjects.Container;
   text: Phaser.GameObjects.Text;
+}
+
+interface MotionOffsets {
+  dashX: number;
+  pushX: number;
+  dodgeX: number;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -26,6 +37,13 @@ function clamp(value: number, min: number, max: number): number {
 function logId(): string {
   return `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 }
+
+const ATTACK_STRIKE_DELAY_MS = 230;
+const ATTACK_COOLDOWN_HIT_MS = 340;
+const ATTACK_COOLDOWN_MISS_MS = 980;
+const DODGE_COOLDOWN_PLAYER_MS = 760;
+const DODGE_COOLDOWN_AI_MS = 860;
+const ATTACK_LUNGE_DISTANCE = 170;
 
 export class BeybladeArenaScene extends Phaser.Scene {
   private config: ArenaConfig = DEFAULT_ARENA_CONFIG;
@@ -51,6 +69,10 @@ export class BeybladeArenaScene extends Phaser.Scene {
   private aiLockedUntil = 0;
   private playerDodgingUntil = 0;
   private aiDodgingUntil = 0;
+  private motion: { player: MotionOffsets; ai: MotionOffsets } = {
+    player: { dashX: 0, pushX: 0, dodgeX: 0 },
+    ai: { dashX: 0, pushX: 0, dodgeX: 0 }
+  };
 
   private aiThinkClock = 0;
 
@@ -91,7 +113,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
       return;
     }
 
-    this.animateTokens(delta);
+    this.animateTokens();
 
     if (this.winner) {
       return;
@@ -255,7 +277,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
     this.hideBubble(this.aiBubble);
   }
 
-  private animateTokens(deltaMs: number): void {
+  private animateTokens(): void {
     if (!this.playerToken || !this.aiToken) {
       return;
     }
@@ -263,22 +285,24 @@ export class BeybladeArenaScene extends Phaser.Scene {
     const t = this.time.now / 650;
     const orbit = 30;
 
-    this.playerToken.x = 220 + Math.sin(t * 1.8) * orbit;
+    this.playerToken.x =
+      220 +
+      Math.sin(t * 1.8) * orbit +
+      this.motion.player.dashX +
+      this.motion.player.pushX +
+      this.motion.player.dodgeX;
     this.playerToken.y = 210 + Math.cos(t * 1.2) * orbit;
 
-    this.aiToken.x = 580 + Math.sin(t * 1.4 + 1.2) * orbit;
+    this.aiToken.x =
+      580 +
+      Math.sin(t * 1.4 + 1.2) * orbit +
+      this.motion.ai.dashX +
+      this.motion.ai.pushX +
+      this.motion.ai.dodgeX;
     this.aiToken.y = 210 + Math.cos(t * 1.6 + 0.7) * orbit;
 
-    if (this.playerDodgingUntil > this.time.now) {
-      this.playerToken.x -= 65 * (deltaMs / 1000);
-    }
-
-    if (this.aiDodgingUntil > this.time.now) {
-      this.aiToken.x += 65 * (deltaMs / 1000);
-    }
-
-    this.playerToken.x = clamp(this.playerToken.x, 110, 330);
-    this.aiToken.x = clamp(this.aiToken.x, 470, 690);
+    this.playerToken.x = clamp(this.playerToken.x, 80, 430);
+    this.aiToken.x = clamp(this.aiToken.x, 370, 720);
   }
 
   private attachListeners(): void {
@@ -508,13 +532,21 @@ export class BeybladeArenaScene extends Phaser.Scene {
     return actor === "player" ? this.playerToken : this.aiToken;
   }
 
+  private getMotion(actor: "player" | "ai"): MotionOffsets {
+    return actor === "player" ? this.motion.player : this.motion.ai;
+  }
+
   private playAttackAnimation(actor: "player" | "ai"): void {
     const token = this.getToken(actor);
     if (!token) {
       return;
     }
 
+    const motion = this.getMotion(actor);
+    const direction = actor === "player" ? 1 : -1;
+
     this.tweens.killTweensOf(token);
+    this.tweens.killTweensOf(motion);
     token.setStrokeStyle(4, 0xffffff, 0.95);
 
     this.tweens.add({
@@ -529,6 +561,17 @@ export class BeybladeArenaScene extends Phaser.Scene {
         token.setStrokeStyle(0, 0x000000, 0);
       }
     });
+
+    this.tweens.add({
+      targets: motion,
+      dashX: direction * 72,
+      duration: 120,
+      ease: "Quad.Out",
+      yoyo: true,
+      onComplete: () => {
+        motion.dashX = 0;
+      }
+    });
   }
 
   private playDodgeAnimation(actor: "player" | "ai"): void {
@@ -537,7 +580,11 @@ export class BeybladeArenaScene extends Phaser.Scene {
       return;
     }
 
+    const motion = this.getMotion(actor);
+    const direction = actor === "player" ? -1 : 1;
+
     this.tweens.killTweensOf(token);
+    this.tweens.killTweensOf(motion);
     this.tweens.add({
       targets: token,
       alpha: 0.45,
@@ -547,6 +594,18 @@ export class BeybladeArenaScene extends Phaser.Scene {
       ease: "Sine.InOut",
       onComplete: () => {
         token.setAlpha(1);
+      }
+    });
+
+    this.tweens.add({
+      targets: motion,
+      dodgeX: direction * 74,
+      duration: 100,
+      hold: 120,
+      yoyo: true,
+      ease: "Sine.Out",
+      onComplete: () => {
+        motion.dodgeX = 0;
       }
     });
   }
@@ -587,6 +646,9 @@ export class BeybladeArenaScene extends Phaser.Scene {
 
     const flashColor = target === "player" ? 0xff5a7a : 0x4bc084;
     const burstScale = bitBeast ? 4.5 : 3.2;
+    const motion = this.getMotion(target);
+    const pushDirection = target === "player" ? -1 : 1;
+    const pushAmount = bitBeast ? 58 : 34;
 
     const burst = this.add.circle(token.x, token.y, 12, flashColor, 0.7).setDepth(18);
     const damageText = this.add
@@ -621,6 +683,18 @@ export class BeybladeArenaScene extends Phaser.Scene {
       ease: "Sine.Out",
       onComplete: () => {
         damageText.destroy();
+      }
+    });
+
+    this.tweens.killTweensOf(motion);
+    this.tweens.add({
+      targets: motion,
+      pushX: pushDirection * pushAmount,
+      duration: 95,
+      ease: "Quad.Out",
+      yoyo: true,
+      onComplete: () => {
+        motion.pushX = 0;
       }
     });
 
@@ -682,6 +756,12 @@ export class BeybladeArenaScene extends Phaser.Scene {
     this.aiLockedUntil = 0;
     this.playerDodgingUntil = 0;
     this.aiDodgingUntil = 0;
+    this.motion.player.dashX = 0;
+    this.motion.player.pushX = 0;
+    this.motion.player.dodgeX = 0;
+    this.motion.ai.dashX = 0;
+    this.motion.ai.pushX = 0;
+    this.motion.ai.dodgeX = 0;
     this.aiThinkClock = 0;
     this.hideAllBubbles();
     this.broadcastState();

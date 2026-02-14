@@ -10,13 +10,19 @@ export const DEFAULT_ARENA_CONFIG: ArenaConfig = {
 };
 
 export const DIFFICULTY_AI_DODGE_CHANCE = {
-  easy: 0.2,
+  easy: 0.08,
   medium: 0.42,
   hard: 0.62
 } as const;
 
 export const DIFFICULTY_AI_ACTION_DELAY = {
-  easy: 860,
-  medium: 680,
+  easy: 1300,
+  medium: 720,
   hard: 520
+} as const;
+
+export const DIFFICULTY_AI_DAMAGE_MULTIPLIER = {
+  easy: 0.58,
+  medium: 1,
+  hard: 1.1
 } as const;
