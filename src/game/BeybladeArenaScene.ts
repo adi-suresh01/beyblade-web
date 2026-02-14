@@ -518,6 +518,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
 
     if (attacker === "player") {
       if (this.aiDodgingUntil > now) {
+        this.applyCooldown("player", this.getAttackRecoveryCooldown("player", false));
         this.playerBit = clamp(this.playerBit + 10, 0, MAX_BIT);
         this.aiBit = clamp(this.aiBit + 14, 0, MAX_BIT);
         this.showMissEffect("ai");
@@ -528,6 +529,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
       }
 
       const damage = 12 + Math.floor(Math.random() * 8);
+      this.applyCooldown("player", this.getAttackRecoveryCooldown("player", true));
       this.aiHp = clamp(this.aiHp - damage, 0, MAX_HP);
       this.playerBit = clamp(this.playerBit + 18, 0, MAX_BIT);
       this.showImpactEffect("ai", damage, false);
@@ -538,6 +540,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
     }
 
     if (this.playerDodgingUntil > now) {
+      this.applyCooldown("ai", this.getAttackRecoveryCooldown("ai", false));
       this.aiBit = clamp(this.aiBit + 10, 0, MAX_BIT);
       this.playerBit = clamp(this.playerBit + 14, 0, MAX_BIT);
       this.showMissEffect("player");
@@ -546,7 +549,12 @@ export class BeybladeArenaScene extends Phaser.Scene {
       return;
     }
 
-    const damage = 12 + Math.floor(Math.random() * 9);
+    const rawDamage = 12 + Math.floor(Math.random() * 9);
+    const damage = Math.max(
+      4,
+      Math.round(rawDamage * DIFFICULTY_AI_DAMAGE_MULTIPLIER[this.config.difficulty])
+    );
+    this.applyCooldown("ai", this.getAttackRecoveryCooldown("ai", true));
     this.playerHp = clamp(this.playerHp - damage, 0, MAX_HP);
     this.aiBit = clamp(this.aiBit + 18, 0, MAX_BIT);
     this.showImpactEffect("player", damage, false);
