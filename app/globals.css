@@ -65,6 +65,148 @@ a {
   align-items: end;
 }
 
+.setup-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.launch-panel h2 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.launch-grid {
+  display: grid;
+  grid-template-columns: 1fr minmax(220px, 280px) 1fr;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.trainer-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  background: linear-gradient(150deg, rgba(15, 26, 54, 0.95), rgba(8, 14, 30, 0.95));
+  display: grid;
+  gap: 8px;
+}
+
+.trainer-card-ai {
+  background: linear-gradient(150deg, rgba(48, 18, 26, 0.88), rgba(12, 12, 24, 0.95));
+}
+
+.trainer-tag {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.trainer-card h3 {
+  margin: 0;
+}
+
+.blade-badge {
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.86rem;
+  width: fit-content;
+}
+
+.launcher-ui {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.launcher-body {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #0e1c37;
+  font-size: 0.85rem;
+}
+
+.ripcord {
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: #172d59;
+  width: fit-content;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.launch-center {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  background: linear-gradient(160deg, rgba(22, 37, 69, 0.9), rgba(8, 16, 35, 0.95));
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  gap: 10px;
+}
+
+.countdown-mark {
+  margin: 0;
+  font-size: clamp(2rem, 7vw, 3.2rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.launch-controls {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.launch-footer {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.battle-head {
+  display: grid;
+  gap: 10px;
+}
+
+.battle-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.battle-meta div {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #0d1a34;
+  padding: 8px 10px;
+  display: grid;
+  gap: 2px;
+}
+
+.battle-meta span {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.battle-meta strong {
+  font-size: 0.96rem;
+}
+
+.battle-head-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .config-panel label {
   display: block;
   font-size: 0.8rem;
@@ -212,12 +354,32 @@ button:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .setup-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .launch-grid {
+    grid-template-columns: 1fr;
+  }
+
   .voice-controls {
     grid-template-columns: 1fr;
   }
 
   .commands {
     grid-template-columns: 1fr;
+  }
+
+  .battle-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .battle-head-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .launch-footer {
+    justify-content: flex-start;
   }
 
   .arena-canvas {

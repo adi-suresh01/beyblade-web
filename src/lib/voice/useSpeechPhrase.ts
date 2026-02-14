@@ -1,14 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { parseVoiceIntent } from "@/lib/voice/intent";
-
-interface UseSpeechCommandParams {
-  onCommand: (command: "attack" | "dodge" | "bit-beast") => void;
-  onTrashTalk: (text: string) => void;
-}
 
 type SpeechRecognitionCtor = typeof window.SpeechRecognition;
+
+interface UseSpeechPhraseParams {
+  phrase: string;
+  onMatch: (heardText: string) => void;
+}
 
 function getSpeechRecognitionCtor(): SpeechRecognitionCtor | undefined {
   if (typeof window === "undefined") {
@@ -20,15 +19,21 @@ function getSpeechRecognitionCtor(): SpeechRecognitionCtor | undefined {
       .webkitSpeechRecognition) as SpeechRecognitionCtor | undefined;
 }
 
-export function useSpeechCommand({
-  onCommand,
-  onTrashTalk
-}: UseSpeechCommandParams) {
+function normalize(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function useSpeechPhrase({ phrase, onMatch }: UseSpeechPhraseParams) {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [lastTranscript, setLastTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  const expectedPhrase = useMemo(() => normalize(phrase), [phrase]);
   const supported = useMemo(() => Boolean(getSpeechRecognitionCtor()), []);
 
   const start = useCallback(() => {
@@ -77,23 +82,21 @@ export function useSpeechCommand({
       }
 
       setLastTranscript(results);
-      const intent = parseVoiceIntent(results);
-      if (intent.type === "command") {
-        onCommand(intent.command);
-        return;
+      const normalized = normalize(results);
+      if (normalized.includes(expectedPhrase)) {
+        onMatch(results);
+        recognition.stop();
       }
-
-      onTrashTalk(intent.text);
     };
 
     try {
       recognition.start();
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unable to start speech recognition";
+        error instanceof Error ? error.message : "Unable to start phrase detection";
       setError(message);
     }
-  }, [onCommand, onTrashTalk]);
+  }, [expectedPhrase, onMatch]);
 
   const stop = useCallback(() => {
     recognitionRef.current?.stop();
