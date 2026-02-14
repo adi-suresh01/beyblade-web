@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArenaCanvas } from "@/components/ArenaCanvas";
 import { BEYBLADE_LIST, BEYBLADES } from "@/lib/game/beyblades";
 import {
@@ -84,6 +84,7 @@ export function BeybladeGameClient() {
   const [countdown, setCountdown] = useState(COUNTDOWN_START);
   const [manualTrash, setManualTrash] = useState("");
   const [isTalking, setIsTalking] = useState(false);
+  const trashProcessingRef = useRef(false);
 
   const inBattle = matchPhase === "battle";
   const inLaunchSequence = matchPhase === "countdown" || matchPhase === "await-launch";
@@ -163,22 +164,27 @@ export function BeybladeGameClient() {
   const handlePlayerTrashTalk = useCallback(
     async (text: string) => {
       const clean = text.trim();
-      if (!clean || !inBattle) {
+      if (!clean || !inBattle || isTalking || trashProcessingRef.current) {
         return;
       }
 
-      emitArenaLog({
-        id: makeId(),
-        kind: "trash",
-        speaker: "player",
-        text: clean,
-        timestamp: Date.now()
-      });
+      trashProcessingRef.current = true;
+      try {
+        emitArenaLog({
+          id: makeId(),
+          kind: "trash",
+          speaker: "player",
+          text: clean,
+          timestamp: Date.now()
+        });
 
-      await maybeSpeak("player", clean).catch(() => undefined);
-      await triggerAiRoast(clean, "Respond to player trash talk.");
+        await maybeSpeak("player", clean).catch(() => undefined);
+        await triggerAiRoast(clean, "Respond to player trash talk.");
+      } finally {
+        trashProcessingRef.current = false;
+      }
     },
-    [inBattle, maybeSpeak, triggerAiRoast]
+    [inBattle, isTalking, maybeSpeak, triggerAiRoast]
   );
 
   useEffect(() => {
@@ -219,7 +225,7 @@ export function BeybladeGameClient() {
       sendArenaCommand(command);
     },
     onTrashTalk: (text) => {
-      if (!inBattle) {
+      if (!inBattle || isTalking || trashProcessingRef.current) {
         return;
       }
       void handlePlayerTrashTalk(text);

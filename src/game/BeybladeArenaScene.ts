@@ -67,6 +67,8 @@ export class BeybladeArenaScene extends Phaser.Scene {
 
   private playerLockedUntil = 0;
   private aiLockedUntil = 0;
+  private playerDodgeLockedUntil = 0;
+  private aiDodgeLockedUntil = 0;
   private playerDodgingUntil = 0;
   private aiDodgingUntil = 0;
   private playerCooldownNoticeAt = 0;
@@ -385,12 +387,26 @@ export class BeybladeArenaScene extends Phaser.Scene {
     return actor === "player" ? this.playerLockedUntil : this.aiLockedUntil;
   }
 
+  private getActorDodgeLock(actor: "player" | "ai"): number {
+    return actor === "player"
+      ? this.playerDodgeLockedUntil
+      : this.aiDodgeLockedUntil;
+  }
+
   private setActorLock(actor: "player" | "ai", lockUntil: number): void {
     if (actor === "player") {
       this.playerLockedUntil = lockUntil;
       return;
     }
     this.aiLockedUntil = lockUntil;
+  }
+
+  private setActorDodgeLock(actor: "player" | "ai", lockUntil: number): void {
+    if (actor === "player") {
+      this.playerDodgeLockedUntil = lockUntil;
+      return;
+    }
+    this.aiDodgeLockedUntil = lockUntil;
   }
 
   private applyCooldown(actor: "player" | "ai", cooldownMs: number): void {
@@ -450,19 +466,29 @@ export class BeybladeArenaScene extends Phaser.Scene {
     }
 
     const now = this.time.now;
-    const lock = this.getActorLock(actor);
 
-    if (now < lock) {
-      if (fromUser && now > this.playerCooldownNoticeAt) {
-        const waitSec = ((lock - now) / 1000).toFixed(1);
-        this.emitSystem(`Cooldown active (${waitSec}s).`);
-        this.playerCooldownNoticeAt = now + 320;
+    if (command === "dodge") {
+      const dodgeLock = this.getActorDodgeLock(actor);
+      if (now < dodgeLock) {
+        if (fromUser && now > this.playerCooldownNoticeAt) {
+          const waitSec = ((dodgeLock - now) / 1000).toFixed(1);
+          this.emitSystem(`Dodge cooldown (${waitSec}s).`);
+          this.playerCooldownNoticeAt = now + 280;
+        }
+        return;
       }
+
+      this.performDodge(actor);
       return;
     }
 
-    if (command === "dodge") {
-      this.performDodge(actor);
+    const lock = this.getActorLock(actor);
+    if (now < lock) {
+      if (fromUser && now > this.playerCooldownNoticeAt) {
+        const waitSec = ((lock - now) / 1000).toFixed(1);
+        this.emitSystem(`Attack cooldown (${waitSec}s).`);
+        this.playerCooldownNoticeAt = now + 280;
+      }
       return;
     }
 
@@ -484,7 +510,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
     const now = this.time.now;
 
     this.playDodgeAnimation(actor);
-    this.applyCooldown(actor, this.getDodgeCooldown(actor));
+    this.setActorDodgeLock(actor, now + this.getDodgeCooldown(actor));
 
     if (actor === "player") {
       this.playerDodgingUntil = now + 320;
@@ -812,6 +838,8 @@ export class BeybladeArenaScene extends Phaser.Scene {
     this.winner = null;
     this.playerLockedUntil = 0;
     this.aiLockedUntil = 0;
+    this.playerDodgeLockedUntil = 0;
+    this.aiDodgeLockedUntil = 0;
     this.playerDodgingUntil = 0;
     this.aiDodgingUntil = 0;
     this.playerCooldownNoticeAt = 0;

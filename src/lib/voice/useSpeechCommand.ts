@@ -25,6 +25,10 @@ export function useSpeechCommand({
   onTrashTalk
 }: UseSpeechCommandParams) {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const lastCommandRef = useRef<"attack" | "dodge" | "bit-beast" | null>(null);
+  const lastCommandAtRef = useRef(0);
+  const lastTrashRef = useRef("");
+  const lastTrashAtRef = useRef(0);
   const [isListening, setIsListening] = useState(false);
   const [lastTranscript, setLastTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -70,27 +74,55 @@ export function useSpeechCommand({
     };
 
     recognition.onresult = (event) => {
-      const results = Array.from(event.results)
-        .slice(event.resultIndex)
-        .map((result) => {
-          const first = result[0];
-          return first?.transcript ?? "";
-        })
-        .join(" ")
-        .trim();
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const result = event.results[index];
+        const first = result?.[0];
+        const transcript = (first?.transcript || "").trim();
+        if (!transcript) {
+          continue;
+        }
 
-      if (!results) {
-        return;
+        setLastTranscript(transcript);
+        const intent = parseVoiceIntent(transcript);
+        const now = Date.now();
+
+        if (intent.type === "command") {
+          const isDuplicateCommand =
+            lastCommandRef.current === intent.command && now - lastCommandAtRef.current < 360;
+          if (isDuplicateCommand) {
+            continue;
+          }
+
+          lastCommandRef.current = intent.command;
+          lastCommandAtRef.current = now;
+          onCommand(intent.command);
+          continue;
+        }
+
+        if (!result.isFinal) {
+          continue;
+        }
+
+        const normalizedTrash = transcript
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+
+        if (normalizedTrash.length < 8) {
+          continue;
+        }
+
+        const isDuplicateTrash =
+          normalizedTrash === lastTrashRef.current && now - lastTrashAtRef.current < 3200;
+        if (isDuplicateTrash) {
+          continue;
+        }
+
+        lastTrashRef.current = normalizedTrash;
+        lastTrashAtRef.current = now;
+        onTrashTalk(intent.text);
       }
-
-      setLastTranscript(results);
-      const intent = parseVoiceIntent(results);
-      if (intent.type === "command") {
-        onCommand(intent.command);
-        return;
-      }
-
-      onTrashTalk(intent.text);
     };
 
     try {
