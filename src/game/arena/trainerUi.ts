@@ -1,5 +1,4 @@
 import Phaser from "phaser";
-import { BEYBLADES } from "@/lib/game/beyblades";
 import { ArenaConfig, BeybladeId } from "@/lib/game/types";
 import { ActorId, SpeechBubble } from "@/game/arena/types";
 
@@ -169,14 +168,6 @@ export class ArenaTrainerUi {
       })
       .setOrigin(0.5);
 
-    const bladeName = this.scene.add
-      .text(0, 34, label === "YOU" ? BEYBLADES.dragoon.name : BEYBLADES.dranzer.name, {
-        fontFamily: "Rajdhani, sans-serif",
-        fontSize: "12px",
-        color: "#d8e7ff"
-      })
-      .setOrigin(0.5);
-
     return this.scene.add
       .container(x, y, [
         hair,
@@ -187,8 +178,7 @@ export class ArenaTrainerUi {
         legRight,
         launcher,
         cord,
-        title,
-        bladeName
+        title
       ])
       .setDepth(8);
   }
