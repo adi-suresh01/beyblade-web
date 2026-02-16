@@ -65,6 +65,11 @@ function emptyVisual(): ActorVisual {
 export class ArenaVisualRig {
   private readonly scene: Phaser.Scene;
 
+  private actorBlade: Record<ActorId, BeybladeId> = {
+    player: "dragoon",
+    ai: "driger"
+  };
+
   private visuals: Record<ActorId, ActorVisual> = {
     player: emptyVisual(),
     ai: emptyVisual()
@@ -92,6 +97,8 @@ export class ArenaVisualRig {
   }
 
   create(config: ArenaConfig): void {
+    this.actorBlade.player = config.playerBlade;
+    this.actorBlade.ai = config.aiBlade;
     this.drawArenaBackdrop();
     this.visuals.player = this.createActorVisual("player", config.playerBlade);
     this.visuals.ai = this.createActorVisual("ai", config.aiBlade);
@@ -123,6 +130,8 @@ export class ArenaVisualRig {
   }
 
   applyConfig(config: ArenaConfig): void {
+    this.actorBlade.player = config.playerBlade;
+    this.actorBlade.ai = config.aiBlade;
     this.setActorBlade("player", config.playerBlade);
     this.setActorBlade("ai", config.aiBlade);
   }
@@ -172,8 +181,6 @@ export class ArenaVisualRig {
     state.attackOffsetY = 0;
     state.spinBoostUntil = this.scene.time.now + 520;
 
-    this.pulseBlade(actor, 0.88, 1.16, 76);
-
     this.scene.tweens.add({
       targets: state,
       attackOffsetX: -direction * 24,
@@ -189,7 +196,10 @@ export class ArenaVisualRig {
           new Phaser.Math.Vector2(direction * ATTACK_LUNGE_DISTANCE, 0)
         );
 
-        this.animateCurve(state, curve, ATTACK_LUNGE_IN_MS, "Cubic.Out", () => {
+        this.animateCurve(curve, ATTACK_LUNGE_IN_MS, "Cubic.Out", (p) => {
+          state.attackOffsetX = p.x;
+          state.attackOffsetY = p.y;
+        }, () => {
           this.scene.time.delayedCall(ATTACK_LUNGE_HOLD_MS, () => {
             this.scene.tweens.add({
               targets: state,
@@ -225,8 +235,6 @@ export class ArenaVisualRig {
     state.dodgeOffsetY = 0;
     state.spinBoostUntil = this.scene.time.now + 300;
 
-    this.pulseBlade(actor, 0.9, 1.08, 58);
-
     this.scene.tweens.add({
       targets: state,
       dodgeOffsetX: -escapeX * 0.24,
@@ -241,7 +249,10 @@ export class ArenaVisualRig {
           new Phaser.Math.Vector2(escapeX, escapeY * 0.88)
         );
 
-        this.animateCurve(state, curve, 120, "Sine.Out", () => {
+        this.animateCurve(curve, 120, "Sine.Out", (p) => {
+          state.dodgeOffsetX = p.x;
+          state.dodgeOffsetY = p.y;
+        }, () => {
           this.scene.time.delayedCall(40, () => {
             this.scene.tweens.add({
               targets: state,
@@ -281,8 +292,6 @@ export class ArenaVisualRig {
     const now = this.scene.time.now;
     const color = actor === "player" ? 0x55beff : 0xff8753;
     this.motion[actor].spinBoostUntil = now + 820;
-
-    this.pulseBlade(actor, 0.84, 1.24, 120);
 
     const chargeRing = this.scene.add
       .circle(token.x, token.y, BLADE_SIZE * 0.48, color, 0.18)
@@ -560,7 +569,7 @@ export class ArenaVisualRig {
           y,
           visual.base.rotation,
           boost,
-          this.resolveBladeColor(actor === "player" ? "dragoon" : "dranzer")
+          this.resolveBladeColor(this.actorBlade[actor])
         );
         visual.trailNextAt = time + trailInterval;
       }
@@ -602,35 +611,11 @@ export class ArenaVisualRig {
     });
   }
 
-  private pulseBlade(actor: ActorId, from: number, to: number, duration: number): void {
-    const visual = this.visuals[actor];
-    if (!visual.base || !visual.ring || !visual.highlight) {
-      return;
-    }
-
-    this.scene.tweens.killTweensOf(visual.base);
-    this.scene.tweens.killTweensOf(visual.ring);
-    this.scene.tweens.killTweensOf(visual.highlight);
-
-    visual.base.setScale(from);
-    visual.ring.setScale(from * 1.04);
-    visual.highlight.setScale(from * 0.8);
-
-    this.scene.tweens.add({
-      targets: [visual.base, visual.ring, visual.highlight],
-      scaleX: to,
-      scaleY: to,
-      duration,
-      yoyo: true,
-      ease: "Sine.InOut"
-    });
-  }
-
   private animateCurve(
-    state: ActorMotion,
     curve: Phaser.Curves.CubicBezier,
     duration: number,
     ease: string,
+    onPoint: (point: Phaser.Math.Vector2) => void,
     onComplete?: () => void
   ): void {
     const cursor = { t: 0 };
@@ -641,8 +626,7 @@ export class ArenaVisualRig {
       ease,
       onUpdate: () => {
         const p = curve.getPoint(cursor.t);
-        state.attackOffsetX = p.x;
-        state.attackOffsetY = p.y;
+        onPoint(p);
       },
       onComplete: () => {
         onComplete?.();
