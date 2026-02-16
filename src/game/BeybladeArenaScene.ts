@@ -59,7 +59,7 @@ const PLAYER_HOME_Y = 208;
 const AI_HOME_Y = 214;
 const ORBIT_X = 18;
 const ORBIT_Y = 13;
-const BLADE_SIZE = 116;
+const BLADE_SIZE = 88;
 const ATTACK_STRIKE_DELAY_MS = 220;
 const ATTACK_COOLDOWN_HIT_MS = 360;
 const ATTACK_COOLDOWN_MISS_MS = 960;
@@ -68,9 +68,6 @@ const DODGE_COOLDOWN_AI_MS = 980;
 const ATTACK_LUNGE_DISTANCE = 310;
 const ATTACK_LUNGE_IN_MS = 160;
 const ATTACK_LUNGE_HOLD_MS = 45;
-const BATTLE_TEXTURE_OVERRIDE: Partial<Record<BeybladeId, string>> = {
-  dranzer: "blade-dranzer-spinning"
-};
 
 export class BeybladeArenaScene extends Phaser.Scene {
   private config: ArenaConfig = DEFAULT_ARENA_CONFIG;
@@ -85,7 +82,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
       homeX: PLAYER_HOME_X,
       homeY: PLAYER_HOME_Y,
       phase: 0.3,
-      spinDegPerSec: 660,
+      spinDegPerSec: 1120,
       attackOffsetX: 0,
       dodgeOffsetX: 0,
       dodgeOffsetY: 0,
@@ -95,7 +92,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
       homeX: AI_HOME_X,
       homeY: AI_HOME_Y,
       phase: 1.2,
-      spinDegPerSec: -640,
+      spinDegPerSec: -1080,
       attackOffsetX: 0,
       dodgeOffsetX: 0,
       dodgeOffsetY: 0,
@@ -143,10 +140,6 @@ export class BeybladeArenaScene extends Phaser.Scene {
         this.load.image(baseKey, `/beyblades/${bladeId}.png`);
       }
     }
-
-    if (!this.textures.exists("blade-dranzer-spinning")) {
-      this.load.image("blade-dranzer-spinning", "/beyblades/dranzer_spinning.png");
-    }
   }
 
   create(): void {
@@ -179,10 +172,6 @@ export class BeybladeArenaScene extends Phaser.Scene {
 
   private textureKey(bladeId: BeybladeId): string {
     return `blade-${bladeId}`;
-  }
-
-  private battleTextureKey(bladeId: BeybladeId): string {
-    return BATTLE_TEXTURE_OVERRIDE[bladeId] || this.textureKey(bladeId);
   }
 
   private resolveBladeColor(bladeId: BeybladeId): number {
@@ -235,7 +224,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
       .setDepth(10);
 
     const blade = this.add
-      .image(0, 0, this.battleTextureKey(bladeId))
+      .image(0, 0, this.textureKey(bladeId))
       .setDisplaySize(BLADE_SIZE, BLADE_SIZE)
       .setDepth(13)
       .setScale(1);
@@ -503,7 +492,7 @@ export class BeybladeArenaScene extends Phaser.Scene {
     const color = this.resolveBladeColor(bladeId);
     const visual = this.visuals[actor];
 
-    visual.blade?.setTexture(this.battleTextureKey(bladeId));
+    visual.blade?.setTexture(this.textureKey(bladeId));
     visual.glow?.setFillStyle(color, 0.14).setStrokeStyle(3, color, 0.92);
   }
 
