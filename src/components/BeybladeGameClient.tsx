@@ -351,19 +351,23 @@ export function BeybladeGameClient() {
 
   return (
     <main className={`page phase-${matchPhase}`}>
-      <section className="hero">
-        <h1>Beyblade Voice Arena</h1>
-      </section>
+      {matchPhase === "intro" || matchPhase === "blade-select" || matchPhase === "difficulty-select" ? (
+        <section className="hero hero-menu view-panel">
+          <p>Blade Arena</p>
+          <h1>Beyblade</h1>
+        </section>
+      ) : null}
 
       {matchPhase === "intro" ? (
-        <section className="panel intro-panel view-panel">
+        <section className="panel intro-panel intro-home view-panel">
+          <div className="intro-badge">Ready</div>
           <button className="start-button" onClick={() => setMatchPhase("blade-select")}>
             START
           </button>
           <div className="blade-preview-grid">
             {BEYBLADE_LIST.map((blade) => (
               <div key={blade.id} className="blade-preview-item">
-                <div className="blade-wheel" style={bladeStyle(blade.color)}>
+                <div className="blade-wheel blade-wheel-static" style={bladeStyle(blade.color)}>
                   <Image
                     className="blade-image"
                     src={`/beyblades/${blade.id}.png`}
@@ -392,7 +396,7 @@ export function BeybladeGameClient() {
                   onClick={() => setPlayerBlade(blade.id)}
                   aria-pressed={selected}
                 >
-                  <div className="blade-wheel" style={bladeStyle(blade.color)}>
+                  <div className="blade-wheel blade-wheel-static" style={bladeStyle(blade.color)}>
                     <Image
                       className="blade-image"
                       src={`/beyblades/${blade.id}.png`}
@@ -402,7 +406,6 @@ export function BeybladeGameClient() {
                     />
                   </div>
                   <strong>{blade.name}</strong>
-                  <span>{blade.bitBeast}</span>
                 </button>
               );
             })}
