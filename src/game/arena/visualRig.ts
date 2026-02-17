@@ -97,6 +97,7 @@ export class ArenaVisualRig {
   }
 
   create(config: ArenaConfig): void {
+    console.log('BLADE_SIZE:', BLADE_SIZE);
     this.actorBlade.player = config.playerBlade;
     this.actorBlade.ai = config.aiBlade;
     this.drawArenaBackdrop();
