@@ -25,7 +25,7 @@ export function ArenaCanvas() {
         parent: containerRef.current,
         scene: [BeybladeArenaScene],
         scale: {
-          mode: Phaser.Scale.FIT,
+          mode: Phaser.Scale.NONE,
           autoCenter: Phaser.Scale.CENTER_BOTH
         }
       });
