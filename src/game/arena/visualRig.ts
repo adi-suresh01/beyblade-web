@@ -337,38 +337,60 @@ export class ArenaVisualRig {
     }
 
     const flashColor = target === "player" ? 0xff5d7f : 0x4fd48c;
-    const burstScale = bitBeast ? 4.8 : 3.35;
+    const burstScale = bitBeast ? 5.2 : 3.8;
     const pushDirection = target === "player" ? -1 : 1;
-    const pushAmount = bitBeast ? 92 : 64;
+    const pushAmount = bitBeast ? 96 : 68;
     const state = this.motion[target];
 
     state.pushOffsetX = pushDirection * pushAmount;
-    state.spinBoostUntil = this.scene.time.now + (bitBeast ? 640 : 380);
+    state.spinBoostUntil = this.scene.time.now + (bitBeast ? 680 : 420);
+
+    const impactRing = this.scene.add
+      .circle(token.x, token.y, 8, 0xffffff, 0.9)
+      .setDepth(17);
+
+    this.scene.tweens.add({
+      targets: impactRing,
+      scaleX: bitBeast ? 3.2 : 2.4,
+      scaleY: bitBeast ? 3.2 : 2.4,
+      alpha: 0,
+      duration: bitBeast ? 220 : 140,
+      ease: "Quad.Out",
+      onComplete: () => {
+        impactRing.destroy();
+      }
+    });
 
     const burst = this.scene.add
-      .circle(token.x, token.y, 12, flashColor, 0.72)
+      .circle(token.x, token.y, 12, flashColor, 0.85)
       .setDepth(18);
 
+    const outerBurst = this.scene.add
+      .circle(token.x, token.y, 18, flashColor, 0.5)
+      .setDepth(17)
+      .setBlendMode(Phaser.BlendModes.ADD);
+
     const damageText = this.scene.add
-      .text(token.x, token.y - 34, `-${damage}`, {
+      .text(token.x, token.y - 38, `-${damage}`, {
         fontFamily: "Teko, Rajdhani, sans-serif",
-        fontSize: bitBeast ? "30px" : "24px",
+        fontSize: bitBeast ? "36px" : "28px",
         fontStyle: "700",
         color: "#ffffff",
         stroke: "#0b1730",
-        strokeThickness: 4
+        strokeThickness: 5
       })
       .setOrigin(0.5)
       .setDepth(19);
 
-    this.emitImpactSparks(token.x, token.y, flashColor, bitBeast ? 11 : 8);
+    this.emitImpactSparks(token.x, token.y, flashColor, bitBeast ? 16 : 12);
+    this.emitShockwave(token.x, token.y, flashColor, bitBeast);
 
     this.scene.tweens.add({
       targets: burst,
       scaleX: burstScale,
       scaleY: burstScale,
       alpha: 0,
-      duration: bitBeast ? 460 : 310,
+      duration: bitBeast ? 480 : 340,
       ease: "Cubic.Out",
       onComplete: () => {
         burst.destroy();
@@ -376,18 +398,31 @@ export class ArenaVisualRig {
     });
 
     this.scene.tweens.add({
-      targets: damageText,
-      y: damageText.y - 30,
+      targets: outerBurst,
+      scaleX: burstScale * 1.4,
+      scaleY: burstScale * 1.4,
       alpha: 0,
-      duration: bitBeast ? 660 : 460,
+      duration: bitBeast ? 520 : 380,
       ease: "Sine.Out",
+      onComplete: () => {
+        outerBurst.destroy();
+      }
+    });
+
+    this.scene.tweens.add({
+      targets: damageText,
+      y: damageText.y - 40,
+      alpha: 0,
+      scale: 1.2,
+      duration: bitBeast ? 720 : 520,
+      ease: "Back.Out",
       onComplete: () => {
         damageText.destroy();
       }
     });
 
     this.applyHitStop(bitBeast ? BIT_BEAST_HIT_STOP_MS : IMPACT_HIT_STOP_MS);
-    this.scene.cameras.main.shake(bitBeast ? 140 : 92, bitBeast ? 0.0068 : 0.0035);
+    this.scene.cameras.main.shake(bitBeast ? 160 : 100, bitBeast ? 0.008 : 0.004);
   }
 
   showMissEffect(target: ActorId): void {
