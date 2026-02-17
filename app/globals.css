@@ -346,16 +346,19 @@ a {
 
 .blade-wheel {
   --blade-color: #4bc3ff;
-  width: 108px;
+  width: 112px;
   aspect-ratio: 1;
   border-radius: 999px;
   position: relative;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 0.34), transparent 34%),
-    radial-gradient(circle at 70% 78%, rgba(0, 0, 0, 0.48), rgba(0, 0, 0, 0.82)),
-    linear-gradient(140deg, var(--blade-color), #192a5e 62%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2), 0 10px 18px rgba(0, 0, 0, 0.38);
+  background: radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 0.4), transparent 38%),
+    radial-gradient(circle at 70% 78%, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.85)),
+    linear-gradient(140deg, var(--blade-color), #192a5e 68%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+    0 8px 20px rgba(0, 0, 0, 0.45),
+    0 0 20px var(--blade-color);
+  filter: drop-shadow(0 0 12px var(--blade-color));
 }
 
 .blade-wheel::before {
@@ -363,7 +366,17 @@ a {
   position: absolute;
   inset: 6px;
   border-radius: 999px;
-  border: 2px solid rgba(255, 255, 255, 0.28);
+  border: 2px solid rgba(255, 255, 255, 0.32);
+  animation: ringPulse 2s ease-in-out infinite;
+}
+
+@keyframes ringPulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
 }
 
 .blade-wheel-static,
@@ -372,7 +385,7 @@ a {
 }
 
 .blade-wheel-static::before {
-  opacity: 0.34;
+  opacity: 0.4;
 }
 
 .blade-image {
