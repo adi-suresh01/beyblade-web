@@ -4,8 +4,8 @@ export const PLAYER_HOME_X = 232;
 export const AI_HOME_X = 568;
 export const PLAYER_HOME_Y = 208;
 export const AI_HOME_Y = 214;
-export const ORBIT_X = 18;
-export const ORBIT_Y = 13;
+export const ORBIT_X = 22;
+export const ORBIT_Y = 16;
 
 export const BLADE_SIZE = 88;
 
