@@ -721,22 +721,81 @@ export class ArenaVisualRig {
   ): void {
     for (let i = 0; i < count; i += 1) {
       const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-      const distance = Phaser.Math.Between(22, 56);
+      const distance = Phaser.Math.Between(28, 72);
+      const sparkLength = Phaser.Math.Between(10, 20);
       const spark = this.scene.add
-        .rectangle(x, y, Phaser.Math.Between(8, 16), 3, color, 0.95)
+        .rectangle(x, y, sparkLength, 4, color, 0.98)
         .setDepth(20)
         .setRotation(angle);
+
+      const glowSpark = this.scene.add
+        .rectangle(x, y, sparkLength * 0.6, 2, 0xffffff, 0.8)
+        .setDepth(21)
+        .setRotation(angle)
+        .setBlendMode(Phaser.BlendModes.ADD);
 
       this.scene.tweens.add({
         targets: spark,
         x: x + Math.cos(angle) * distance,
         y: y + Math.sin(angle) * distance,
         alpha: 0,
-        scaleX: 0.1,
-        duration: Phaser.Math.Between(140, 220),
+        scaleX: 0.2,
+        scaleY: 0.5,
+        duration: Phaser.Math.Between(180, 280),
         ease: "Cubic.Out",
         onComplete: () => {
           spark.destroy();
+        }
+      });
+
+      this.scene.tweens.add({
+        targets: glowSpark,
+        x: x + Math.cos(angle) * distance,
+        y: y + Math.sin(angle) * distance,
+        alpha: 0,
+        scaleX: 0.1,
+        duration: Phaser.Math.Between(160, 240),
+        ease: "Quad.Out",
+        onComplete: () => {
+          glowSpark.destroy();
+        }
+      });
+    }
+  }
+
+  private emitShockwave(x: number, y: number, color: number, intense: boolean): void {
+    const wave = this.scene.add
+      .circle(x, y, 12, color, 0)
+      .setDepth(16)
+      .setStrokeStyle(intense ? 4 : 3, color, 0.8);
+
+    this.scene.tweens.add({
+      targets: wave,
+      scaleX: intense ? 6.5 : 4.5,
+      scaleY: intense ? 6.5 : 4.5,
+      alpha: 0,
+      duration: intense ? 420 : 320,
+      ease: "Sine.Out",
+      onComplete: () => {
+        wave.destroy();
+      }
+    });
+
+    if (intense) {
+      const wave2 = this.scene.add
+        .circle(x, y, 12, color, 0)
+        .setDepth(16)
+        .setStrokeStyle(2, 0xffffff, 0.6);
+
+      this.scene.tweens.add({
+        targets: wave2,
+        scaleX: 8,
+        scaleY: 8,
+        alpha: 0,
+        duration: 540,
+        ease: "Cubic.Out",
+        onComplete: () => {
+          wave2.destroy();
         }
       });
     }
