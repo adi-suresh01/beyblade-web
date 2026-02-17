@@ -127,6 +127,21 @@ export class ArenaVisualRig {
 
     this.updateActorVisual("player", time, delta, hpRatios.player);
     this.updateActorVisual("ai", time, delta, hpRatios.ai);
+
+    const playerBase = this.visuals.player.base;
+    const aiBase = this.visuals.ai.base;
+
+    if (playerBase && aiBase) {
+      const dx = playerBase.x - aiBase.x;
+      const dy = playerBase.y - aiBase.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < BLADE_SIZE * 1.5 && time % 180 < delta) {
+        const midX = (playerBase.x + aiBase.x) / 2;
+        const midY = (playerBase.y + aiBase.y) / 2;
+        this.spawnClashSpark(midX, midY);
+      }
+    }
   }
 
   applyConfig(config: ArenaConfig): void {
