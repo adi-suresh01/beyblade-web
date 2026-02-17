@@ -746,7 +746,7 @@ export class ArenaVisualRig {
     const state = this.motion[actor];
     const hpRatio = clamp(hpRatioRaw, 0.1, 1);
 
-    state.pushOffsetX *= 0.82;
+    state.pushOffsetX *= 0.84;
     if (Math.abs(state.pushOffsetX) < 0.1) {
       state.pushOffsetX = 0;
     }
@@ -766,17 +766,19 @@ export class ArenaVisualRig {
     const y = state.homeY + orbitY + state.attackOffsetY + state.dodgeOffsetY;
 
     const hpPenalty = 1 - hpRatio;
-    const boost = time < state.spinBoostUntil ? 1.48 : 1;
-    const spinFactor = (1 + hpPenalty * 0.32) * boost;
+    const boost = time < state.spinBoostUntil ? 1.56 : 1;
+    const spinFactor = (1 + hpPenalty * 0.36) * boost;
     const spinDelta = Phaser.Math.DegToRad(state.spinDegPerSec * spinFactor) * (delta / 1000);
-    const wobble = Math.sin(time / 92 + state.phase * 3) * (0.04 + hpPenalty * 0.05);
+    const wobble = Math.sin(time / 92 + state.phase * 3) * (0.05 + hpPenalty * 0.06);
 
-    visual.shadow?.setPosition(x, y + BLADE_SIZE * 0.32).setScale(
-      1 + Math.abs(state.attackOffsetX) / 560,
-      1
-    );
+    const shadowScale = 1 + Math.abs(state.attackOffsetX) / 520 + hpPenalty * 0.15;
+    visual.shadow?.setPosition(x, y + BLADE_SIZE * 0.34).setScale(shadowScale, 1);
 
-    visual.glow?.setPosition(x, y).setRotation((time / 1200) * (actor === "player" ? 1 : -1));
+    const glowPulse = 1 + Math.sin(time / 300) * 0.08;
+    visual.glow
+      ?.setPosition(x, y)
+      .setRotation((time / 1200) * (actor === "player" ? 1 : -1))
+      .setScale(glowPulse * (boost > 1 ? 1.15 : 1));
 
     if (visual.base && visual.ring && visual.highlight) {
       visual.base.setPosition(x, y);
@@ -784,14 +786,24 @@ export class ArenaVisualRig {
       visual.highlight.setPosition(x, y);
 
       visual.base.rotation += spinDelta;
-      visual.ring.rotation += spinDelta * 1.55;
-      visual.highlight.rotation -= spinDelta * 0.72;
+      visual.ring.rotation += spinDelta * 1.62;
+      visual.highlight.rotation -= spinDelta * 0.78;
 
-      visual.base.setScale(1 + wobble * 0.18, 1 - wobble * 0.14);
-      visual.ring.setScale(1.05 + wobble * 0.22, 1.05 - wobble * 0.18);
-      visual.highlight.setScale(0.82 + wobble * 0.15, 0.82 - wobble * 0.1);
+      const scaleBoost = boost > 1 ? 1.06 : 1;
+      visual.base.setScale(
+        (1 + wobble * 0.2) * scaleBoost,
+        (1 - wobble * 0.16) * scaleBoost
+      );
+      visual.ring.setScale(
+        (1.05 + wobble * 0.24) * scaleBoost,
+        (1.05 - wobble * 0.2) * scaleBoost
+      );
+      visual.highlight.setScale(
+        (0.82 + wobble * 0.18) * scaleBoost,
+        (0.82 - wobble * 0.12) * scaleBoost
+      );
 
-      const trailInterval = boost > 1 ? 28 : Math.max(36, 52 - hpPenalty * 14);
+      const trailInterval = boost > 1 ? 24 : Math.max(32, 48 - hpPenalty * 16);
       if (time >= visual.trailNextAt) {
         this.spawnTrail(
           actor,
