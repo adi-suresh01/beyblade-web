@@ -712,10 +712,37 @@ export class ArenaVisualRig {
       const angle = (i * 60) * Math.PI / 180;
       const x = ARENA_CENTER_X + Math.cos(angle) * 170;
       const y = ARENA_CENTER_Y + Math.sin(angle) * 170;
-      this.scene.add
+      const marker = this.scene.add
         .circle(x, y, 3, 0x4f89e8, 0.6)
         .setDepth(1);
+
+      this.scene.tweens.add({
+        targets: marker,
+        alpha: 0.8,
+        scaleX: 1.3,
+        scaleY: 1.3,
+        duration: 1600 + i * 200,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.InOut"
+      });
     }
+
+    const centerGlow = this.scene.add
+      .circle(ARENA_CENTER_X, ARENA_CENTER_Y, 8, 0x4f89e8, 0.3)
+      .setDepth(1)
+      .setBlendMode(Phaser.BlendModes.ADD);
+
+    this.scene.tweens.add({
+      targets: centerGlow,
+      scaleX: 2.5,
+      scaleY: 2.5,
+      alpha: 0.5,
+      duration: 2000,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.InOut"
+    });
   }
 
   private textureKey(bladeId: BeybladeId): string {
