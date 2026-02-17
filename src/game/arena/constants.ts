@@ -7,7 +7,7 @@ export const AI_HOME_Y = 214;
 export const ORBIT_X = 22;
 export const ORBIT_Y = 16;
 
-export const BLADE_SIZE = 52;
+export const BLADE_SIZE = 28;
 
 export const ATTACK_STRIKE_DELAY_MS = 220;
 export const ATTACK_COOLDOWN_HIT_MS = 360;
