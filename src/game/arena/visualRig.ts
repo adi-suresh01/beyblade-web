@@ -1026,6 +1026,33 @@ export class ArenaVisualRig {
     }
   }
 
+  private spawnClashSpark(x: number, y: number): void {
+    const colors = [0xffd84d, 0xff8753, 0x4bc3ff, 0xffffff];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+
+    const spark = this.scene.add
+      .circle(x, y, 3, color, 0.85)
+      .setDepth(17)
+      .setBlendMode(Phaser.BlendModes.ADD);
+
+    const angle = Math.random() * Math.PI * 2;
+    const distance = Phaser.Math.Between(12, 28);
+
+    this.scene.tweens.add({
+      targets: spark,
+      x: x + Math.cos(angle) * distance,
+      y: y + Math.sin(angle) * distance,
+      alpha: 0,
+      scaleX: 0.3,
+      scaleY: 0.3,
+      duration: Phaser.Math.Between(120, 200),
+      ease: "Quad.Out",
+      onComplete: () => {
+        spark.destroy();
+      }
+    });
+  }
+
   private applyHitStop(durationMs: number): void {
     const now = this.scene.time.now;
     const until = now + durationMs;
