@@ -291,43 +291,105 @@ export class ArenaVisualRig {
 
     const now = this.scene.time.now;
     const color = actor === "player" ? 0x55beff : 0xff8753;
-    this.motion[actor].spinBoostUntil = now + 820;
+    this.motion[actor].spinBoostUntil = now + 920;
 
-    const chargeRing = this.scene.add
-      .circle(token.x, token.y, BLADE_SIZE * 0.48, color, 0.18)
-      .setDepth(15)
-      .setStrokeStyle(2, color, 0.78);
+    for (let i = 0; i < 3; i++) {
+      const delay = i * 80;
+      this.scene.time.delayedCall(delay, () => {
+        const chargeRing = this.scene.add
+          .circle(token.x, token.y, BLADE_SIZE * 0.52, color, 0.24)
+          .setDepth(15)
+          .setStrokeStyle(3 - i, color, 0.85);
+
+        this.scene.tweens.add({
+          targets: chargeRing,
+          scaleX: 2.4 + i * 0.4,
+          scaleY: 2.4 + i * 0.4,
+          alpha: 0,
+          duration: 380 + i * 60,
+          ease: "Quad.Out",
+          onComplete: () => {
+            chargeRing.destroy();
+          }
+        });
+      });
+    }
+
+    const pillar = this.scene.add
+      .rectangle(token.x, token.y, BLADE_SIZE * 2, BLADE_SIZE * 3, color, 0.4)
+      .setDepth(14)
+      .setBlendMode(Phaser.BlendModes.ADD);
 
     this.scene.tweens.add({
-      targets: chargeRing,
-      scaleX: 1.9,
-      scaleY: 1.9,
+      targets: pillar,
+      scaleY: 2.5,
       alpha: 0,
-      duration: 320,
+      duration: 460,
       ease: "Cubic.Out",
       onComplete: () => {
-        chargeRing.destroy();
+        pillar.destroy();
       }
     });
 
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const distance = 60;
+      const orbX = token.x + Math.cos(angle) * distance;
+      const orbY = token.y + Math.sin(angle) * distance;
+
+      const orb = this.scene.add
+        .circle(orbX, orbY, 5, color, 0.9)
+        .setDepth(16)
+        .setBlendMode(Phaser.BlendModes.ADD);
+
+      this.scene.tweens.add({
+        targets: orb,
+        x: token.x,
+        y: token.y,
+        scale: 0.2,
+        alpha: 0,
+        duration: 280,
+        ease: "Quad.In",
+        onComplete: () => {
+          orb.destroy();
+        }
+      });
+    }
+
     const aura = this.scene.add
-      .circle(token.x, token.y, 18, color, 0.34)
+      .circle(token.x, token.y, 24, color, 0.42)
       .setDepth(16)
-      .setStrokeStyle(1, 0xffffff, 0.65);
+      .setStrokeStyle(2, 0xffffff, 0.75)
+      .setBlendMode(Phaser.BlendModes.ADD);
 
     this.scene.tweens.add({
       targets: aura,
-      scaleX: 8.8,
-      scaleY: 8.8,
+      scaleX: 10.5,
+      scaleY: 10.5,
       alpha: 0,
-      duration: 560,
+      duration: 620,
       ease: "Cubic.Out",
       onComplete: () => {
         aura.destroy();
       }
     });
 
-    this.scene.cameras.main.shake(110, 0.0048);
+    const flash = this.scene.add
+      .rectangle(ARENA_CENTER_X, ARENA_CENTER_Y, 800, 400, 0xffffff, 0.3)
+      .setDepth(25)
+      .setBlendMode(Phaser.BlendModes.ADD);
+
+    this.scene.tweens.add({
+      targets: flash,
+      alpha: 0,
+      duration: 140,
+      ease: "Quad.Out",
+      onComplete: () => {
+        flash.destroy();
+      }
+    });
+
+    this.scene.cameras.main.shake(140, 0.006);
   }
 
   showImpactEffect(target: ActorId, damage: number, bitBeast: boolean): void {
