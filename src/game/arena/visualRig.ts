@@ -614,28 +614,67 @@ export class ArenaVisualRig {
       return;
     }
 
+    const swoosh = this.scene.add
+      .ellipse(token.x, token.y, 60, 20, 0xffffff, 0.4)
+      .setDepth(16)
+      .setBlendMode(Phaser.BlendModes.ADD);
+
+    this.scene.tweens.add({
+      targets: swoosh,
+      scaleX: 2,
+      alpha: 0,
+      duration: 180,
+      ease: "Quad.Out",
+      onComplete: () => {
+        swoosh.destroy();
+      }
+    });
+
     const missText = this.scene.add
-      .text(token.x, token.y - 32, "MISS", {
+      .text(token.x, token.y - 36, "MISS", {
         fontFamily: "Teko, Rajdhani, sans-serif",
-        fontSize: "22px",
+        fontSize: "26px",
         fontStyle: "700",
         color: "#ffe16c",
         stroke: "#12203f",
-        strokeThickness: 4
+        strokeThickness: 5
       })
       .setOrigin(0.5)
       .setDepth(18);
 
     this.scene.tweens.add({
       targets: missText,
-      y: missText.y - 18,
+      y: missText.y - 24,
       alpha: 0,
-      duration: 380,
-      ease: "Sine.Out",
+      scale: 1.15,
+      duration: 420,
+      ease: "Back.Out",
       onComplete: () => {
         missText.destroy();
       }
     });
+
+    for (let i = 0; i < 4; i++) {
+      const angle = (i / 4) * Math.PI * 2;
+      const x = token.x + Math.cos(angle) * 30;
+      const y = token.y + Math.sin(angle) * 30;
+
+      const particle = this.scene.add
+        .circle(x, y, 3, 0xffe16c, 0.7)
+        .setDepth(17);
+
+      this.scene.tweens.add({
+        targets: particle,
+        x: x + Math.cos(angle) * 20,
+        y: y + Math.sin(angle) * 20,
+        alpha: 0,
+        duration: 240,
+        ease: "Quad.Out",
+        onComplete: () => {
+          particle.destroy();
+        }
+      });
+    }
   }
 
   private drawArenaBackdrop(): void {
