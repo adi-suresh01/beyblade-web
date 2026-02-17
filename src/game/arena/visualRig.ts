@@ -686,13 +686,24 @@ export class ArenaVisualRig {
     const color = this.resolveBladeColor(bladeId);
 
     const shadow = this.scene.add
-      .ellipse(0, 0, BLADE_SIZE * 0.88, BLADE_SIZE * 0.24, 0x000000, 0.35)
+      .ellipse(0, 0, BLADE_SIZE * 0.92, BLADE_SIZE * 0.26, 0x000000, 0.42)
       .setDepth(9);
 
+    const outerGlow = this.scene.add
+      .circle(0, 0, BLADE_SIZE * 0.72, color, 0.08)
+      .setDepth(9)
+      .setBlendMode(Phaser.BlendModes.ADD);
+
     const glow = this.scene.add
-      .ellipse(0, 0, BLADE_SIZE * 1.24, BLADE_SIZE * 1.24, color, 0.14)
-      .setStrokeStyle(3, color, 0.9)
-      .setDepth(10);
+      .ellipse(0, 0, BLADE_SIZE * 1.28, BLADE_SIZE * 1.28, color, 0.16)
+      .setStrokeStyle(3, color, 0.95)
+      .setDepth(10)
+      .setBlendMode(Phaser.BlendModes.ADD);
+
+    const innerGlow = this.scene.add
+      .circle(0, 0, BLADE_SIZE * 0.48, color, 0.12)
+      .setDepth(11)
+      .setBlendMode(Phaser.BlendModes.ADD);
 
     const base = this.scene.add
       .image(0, 0, this.textureKey(bladeId))
@@ -702,17 +713,17 @@ export class ArenaVisualRig {
 
     const ring = this.scene.add
       .image(0, 0, this.textureKey(bladeId))
-      .setDisplaySize(BLADE_SIZE * 1.06, BLADE_SIZE * 1.06)
+      .setDisplaySize(BLADE_SIZE * 1.08, BLADE_SIZE * 1.08)
       .setDepth(12)
-      .setAlpha(0.28)
+      .setAlpha(0.32)
       .setTint(color)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     const highlight = this.scene.add
       .image(0, 0, this.textureKey(bladeId))
-      .setDisplaySize(BLADE_SIZE * 0.82, BLADE_SIZE * 0.82)
+      .setDisplaySize(BLADE_SIZE * 0.84, BLADE_SIZE * 0.84)
       .setDepth(14)
-      .setAlpha(0.2)
+      .setAlpha(0.24)
       .setTintFill(color)
       .setBlendMode(Phaser.BlendModes.SCREEN);
 
@@ -721,6 +732,25 @@ export class ArenaVisualRig {
       ring.rotation = Math.PI;
       highlight.rotation = Math.PI;
     }
+
+    this.scene.tweens.add({
+      targets: outerGlow,
+      scaleX: 1.15,
+      scaleY: 1.15,
+      alpha: 0.12,
+      duration: 1400,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.InOut"
+    });
+
+    this.scene.tweens.add({
+      targets: innerGlow,
+      rotation: Math.PI * 2,
+      duration: 2400,
+      repeat: -1,
+      ease: "Linear"
+    });
 
     return { shadow, glow, base, ring, highlight, trailNextAt: 0 };
   }
