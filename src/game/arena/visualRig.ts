@@ -175,26 +175,59 @@ export class ArenaVisualRig {
     const visual = this.visuals[actor];
     const direction = actor === "player" ? 1 : -1;
     const arcY = actor === "player" ? -ATTACK_CURVE_ARC_Y : ATTACK_CURVE_ARC_Y;
+    const blade = visual.base;
 
     this.scene.tweens.killTweensOf(state);
     state.attackOffsetX = 0;
     state.attackOffsetY = 0;
-    state.spinBoostUntil = this.scene.time.now + 520;
+    state.spinBoostUntil = this.scene.time.now + 560;
+
+    const color = this.resolveBladeColor(this.actorBlade[actor]);
 
     this.scene.tweens.add({
       targets: state,
-      attackOffsetX: -direction * 24,
-      attackOffsetY: arcY * 0.14,
-      duration: 72,
+      attackOffsetX: -direction * 28,
+      attackOffsetY: arcY * 0.16,
+      duration: 68,
       ease: "Quad.In",
       onComplete: () => {
         const start = new Phaser.Math.Vector2(state.attackOffsetX, state.attackOffsetY);
         const curve = new Phaser.Curves.CubicBezier(
           start,
-          new Phaser.Math.Vector2(direction * 120, arcY),
-          new Phaser.Math.Vector2(direction * 254, arcY * 0.34),
+          new Phaser.Math.Vector2(direction * 128, arcY * 1.1),
+          new Phaser.Math.Vector2(direction * 260, arcY * 0.38),
           new Phaser.Math.Vector2(direction * ATTACK_LUNGE_DISTANCE, 0)
         );
+
+        if (blade) {
+          for (let i = 0; i < 5; i++) {
+            this.scene.time.delayedCall(i * 20, () => {
+              const slash = this.scene.add
+                .rectangle(
+                  blade.x + direction * i * 15,
+                  blade.y,
+                  24,
+                  4,
+                  color,
+                  0.6
+                )
+                .setDepth(12)
+                .setRotation(direction * 0.3)
+                .setBlendMode(Phaser.BlendModes.ADD);
+
+              this.scene.tweens.add({
+                targets: slash,
+                alpha: 0,
+                scaleX: 2,
+                duration: 140,
+                ease: "Quad.Out",
+                onComplete: () => {
+                  slash.destroy();
+                }
+              });
+            });
+          }
+        }
 
         this.animateCurve(curve, ATTACK_LUNGE_IN_MS, "Cubic.Out", (p) => {
           state.attackOffsetX = p.x;
@@ -205,7 +238,7 @@ export class ArenaVisualRig {
               targets: state,
               attackOffsetX: 0,
               attackOffsetY: 0,
-              duration: 190,
+              duration: 200,
               ease: "Back.InOut"
             });
           });
@@ -216,10 +249,23 @@ export class ArenaVisualRig {
     if (visual.glow) {
       this.scene.tweens.add({
         targets: visual.glow,
-        alpha: 0.32,
-        duration: 90,
+        alpha: 0.42,
+        scaleX: 1.4,
+        scaleY: 1.4,
+        duration: 100,
         yoyo: true,
-        ease: "Sine.InOut"
+        ease: "Quad.Out"
+      });
+    }
+
+    if (visual.base) {
+      this.scene.tweens.add({
+        targets: visual.base,
+        scaleX: 1.15,
+        scaleY: 1.15,
+        duration: 80,
+        yoyo: true,
+        ease: "Back.Out"
       });
     }
   }
