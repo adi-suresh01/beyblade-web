@@ -307,40 +307,56 @@ a {
 }
 
 .blade-select-card {
-  border-radius: 14px;
-  border: 1px solid rgba(121, 169, 255, 0.34);
-  background: linear-gradient(160deg, rgba(22, 40, 80, 0.9), rgba(11, 20, 42, 0.96));
-  padding: 12px;
+  border-radius: 16px;
+  border: 2px solid rgba(121, 169, 255, 0.4);
+  background: linear-gradient(160deg, rgba(22, 40, 80, 0.95), rgba(11, 20, 42, 0.98));
+  padding: 16px;
   display: grid;
   justify-items: center;
-  gap: 6px;
+  gap: 10px;
   position: relative;
-  transition: border-color 150ms ease, transform 150ms ease, box-shadow 150ms ease,
-    background 150ms ease;
+  transition: all 200ms ease;
+  box-shadow: 0 6px 16px rgba(8, 20, 48, 0.4);
 }
 
 .blade-select-card:hover {
-  border-color: rgba(141, 190, 255, 0.56);
-  background: linear-gradient(160deg, rgba(27, 47, 92, 0.9), rgba(11, 20, 42, 0.96));
+  border-color: rgba(141, 190, 255, 0.65);
+  background: linear-gradient(160deg, rgba(30, 52, 98, 0.95), rgba(11, 20, 42, 0.98));
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 10px 24px rgba(75, 153, 255, 0.35);
 }
 
 .blade-select-card strong {
-  font-size: 1.06rem;
-  letter-spacing: 0.04em;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
 }
 
 .blade-select-card.selected {
   border-color: #7cb8ff;
-  box-shadow: 0 0 0 2px rgba(106, 180, 255, 0.3), 0 12px 22px rgba(8, 20, 48, 0.5);
-  transform: translateY(-2px);
+  box-shadow: 0 0 0 3px rgba(106, 180, 255, 0.4),
+    0 14px 28px rgba(75, 153, 255, 0.5);
+  transform: translateY(-4px) scale(1.05);
+  animation: selectedGlow 2s ease-in-out infinite;
+}
+
+@keyframes selectedGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(106, 180, 255, 0.4),
+      0 14px 28px rgba(75, 153, 255, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(106, 180, 255, 0.6),
+      0 16px 32px rgba(75, 153, 255, 0.65);
+  }
 }
 
 .blade-select-card.selected::after {
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 14px;
-  background: linear-gradient(165deg, rgba(86, 162, 255, 0.14), rgba(22, 55, 125, 0.08));
+  border-radius: 16px;
+  background: linear-gradient(165deg, rgba(86, 162, 255, 0.18), rgba(22, 55, 125, 0.1));
   pointer-events: none;
 }
 
