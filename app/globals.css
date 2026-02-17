@@ -515,11 +515,29 @@ button {
   background: linear-gradient(160deg, var(--accent-warm), #de6a3e);
   border: none;
   font-weight: 650;
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+  box-shadow: 0 4px 12px rgba(222, 106, 62, 0.3);
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(222, 106, 62, 0.45);
+  filter: brightness(1.1);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(222, 106, 62, 0.4);
 }
 
 button.secondary {
   background: linear-gradient(160deg, #4878c7, #315499);
   border: 1px solid rgba(121, 162, 240, 0.38);
+  box-shadow: 0 4px 12px rgba(72, 120, 199, 0.25);
+}
+
+button.secondary:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(72, 120, 199, 0.4);
 }
 
 button:disabled {
