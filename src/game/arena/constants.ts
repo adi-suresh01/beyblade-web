@@ -15,9 +15,9 @@ export const ATTACK_COOLDOWN_MISS_MS = 960;
 export const DODGE_COOLDOWN_PLAYER_MS = 760;
 export const DODGE_COOLDOWN_AI_MS = 980;
 
-export const ATTACK_LUNGE_DISTANCE = 310;
-export const ATTACK_LUNGE_IN_MS = 170;
-export const ATTACK_LUNGE_HOLD_MS = 45;
+export const ATTACK_LUNGE_DISTANCE = 320;
+export const ATTACK_LUNGE_IN_MS = 160;
+export const ATTACK_LUNGE_HOLD_MS = 50;
 
 export const ATTACK_CURVE_ARC_Y = 44;
 export const DODGE_ESCAPE_X = 74;
