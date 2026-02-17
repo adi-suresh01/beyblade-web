@@ -421,17 +421,44 @@ export class ArenaVisualRig {
   }
 
   private drawArenaBackdrop(): void {
-    this.scene.add
-      .rectangle(ARENA_CENTER_X, ARENA_CENTER_Y, 760, 360, 0x081630, 0.95)
-      .setStrokeStyle(3, 0x294c87, 0.85);
+    const graphics = this.scene.add.graphics();
+
+    graphics.fillStyle(0x050d1f, 1);
+    graphics.fillRect(0, 0, this.scene.scale.width, this.scene.scale.height);
+
+    const gradient = this.scene.add.graphics();
+    gradient.fillGradientStyle(0x0a1836, 0x0a1836, 0x1a2d5a, 0x1a2d5a, 0.85, 0.85, 0.4, 0.4);
+    gradient.fillRect(ARENA_CENTER_X - 380, ARENA_CENTER_Y - 180, 760, 360);
+    gradient.setBlendMode(Phaser.BlendModes.ADD);
 
     this.scene.add
-      .circle(ARENA_CENTER_X, ARENA_CENTER_Y, 184, 0x10275a, 0.62)
-      .setStrokeStyle(4, 0x3d70c4, 0.5);
+      .rectangle(ARENA_CENTER_X, ARENA_CENTER_Y, 760, 360, 0x081630, 0.2)
+      .setStrokeStyle(4, 0x294c87, 0.95);
 
-    this.scene.add
-      .circle(ARENA_CENTER_X, ARENA_CENTER_Y, 132, 0x0a1836, 0.78)
-      .setStrokeStyle(2, 0x4f89e8, 0.5);
+    for (let i = 0; i < 3; i++) {
+      const radius = 200 - i * 34;
+      const circle = this.scene.add
+        .circle(ARENA_CENTER_X, ARENA_CENTER_Y, radius, 0x0a1836, 0.08)
+        .setStrokeStyle(2, 0x3d70c4, 0.4 + i * 0.15);
+
+      this.scene.tweens.add({
+        targets: circle,
+        alpha: 0.3 + i * 0.1,
+        duration: 1200 + i * 400,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.InOut"
+      });
+    }
+
+    for (let i = 0; i < 6; i++) {
+      const angle = (i * 60) * Math.PI / 180;
+      const x = ARENA_CENTER_X + Math.cos(angle) * 170;
+      const y = ARENA_CENTER_Y + Math.sin(angle) * 170;
+      this.scene.add
+        .circle(x, y, 3, 0x4f89e8, 0.6)
+        .setDepth(1);
+    }
   }
 
   private textureKey(bladeId: BeybladeId): string {
