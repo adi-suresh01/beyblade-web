@@ -275,36 +275,84 @@ export class ArenaVisualRig {
     const visual = this.visuals[actor];
     const escapeX = actor === "player" ? -DODGE_ESCAPE_X : DODGE_ESCAPE_X;
     const escapeY = actor === "player" ? -DODGE_ESCAPE_Y : DODGE_ESCAPE_Y;
+    const blade = visual.base;
+    const color = this.resolveBladeColor(this.actorBlade[actor]);
 
     this.scene.tweens.killTweensOf(state);
     state.dodgeOffsetX = 0;
     state.dodgeOffsetY = 0;
-    state.spinBoostUntil = this.scene.time.now + 300;
+    state.spinBoostUntil = this.scene.time.now + 340;
+
+    if (blade) {
+      const afterImage1 = this.scene.add
+        .image(blade.x, blade.y, blade.texture.key)
+        .setDisplaySize(BLADE_SIZE, BLADE_SIZE)
+        .setDepth(11)
+        .setRotation(blade.rotation)
+        .setAlpha(0.4)
+        .setTint(color)
+        .setBlendMode(Phaser.BlendModes.ADD);
+
+      this.scene.tweens.add({
+        targets: afterImage1,
+        alpha: 0,
+        scaleX: 1.2,
+        scaleY: 1.2,
+        duration: 180,
+        ease: "Quad.Out",
+        onComplete: () => {
+          afterImage1.destroy();
+        }
+      });
+    }
 
     this.scene.tweens.add({
       targets: state,
-      dodgeOffsetX: -escapeX * 0.24,
-      dodgeOffsetY: escapeY * 0.16,
-      duration: 55,
+      dodgeOffsetX: -escapeX * 0.28,
+      dodgeOffsetY: escapeY * 0.18,
+      duration: 50,
       ease: "Quad.In",
       onComplete: () => {
+        if (blade) {
+          const afterImage2 = this.scene.add
+            .image(blade.x, blade.y, blade.texture.key)
+            .setDisplaySize(BLADE_SIZE, BLADE_SIZE)
+            .setDepth(11)
+            .setRotation(blade.rotation)
+            .setAlpha(0.35)
+            .setTint(color)
+            .setBlendMode(Phaser.BlendModes.ADD);
+
+          this.scene.tweens.add({
+            targets: afterImage2,
+            alpha: 0,
+            scaleX: 1.15,
+            scaleY: 1.15,
+            duration: 160,
+            ease: "Sine.Out",
+            onComplete: () => {
+              afterImage2.destroy();
+            }
+          });
+        }
+
         const curve = new Phaser.Curves.CubicBezier(
           new Phaser.Math.Vector2(state.dodgeOffsetX, state.dodgeOffsetY),
-          new Phaser.Math.Vector2(escapeX * 0.38, escapeY * 0.26),
-          new Phaser.Math.Vector2(escapeX * 0.82, escapeY * 1.02),
-          new Phaser.Math.Vector2(escapeX, escapeY * 0.88)
+          new Phaser.Math.Vector2(escapeX * 0.42, escapeY * 0.3),
+          new Phaser.Math.Vector2(escapeX * 0.86, escapeY * 1.06),
+          new Phaser.Math.Vector2(escapeX, escapeY * 0.9)
         );
 
-        this.animateCurve(curve, 120, "Sine.Out", (p) => {
+        this.animateCurve(curve, 130, "Sine.Out", (p) => {
           state.dodgeOffsetX = p.x;
           state.dodgeOffsetY = p.y;
         }, () => {
-          this.scene.time.delayedCall(40, () => {
+          this.scene.time.delayedCall(45, () => {
             this.scene.tweens.add({
               targets: state,
               dodgeOffsetX: 0,
               dodgeOffsetY: 0,
-              duration: 150,
+              duration: 160,
               ease: "Back.InOut"
             });
           });
@@ -316,14 +364,26 @@ export class ArenaVisualRig {
       this.scene.tweens.killTweensOf(visual.base);
       this.scene.tweens.add({
         targets: visual.base,
-        alpha: 0.48,
-        duration: 90,
+        alpha: 0.38,
+        duration: 80,
         yoyo: true,
-        repeat: 1,
+        repeat: 2,
         ease: "Sine.InOut",
         onComplete: () => {
           visual.base?.setAlpha(1);
         }
+      });
+    }
+
+    if (visual.ring) {
+      this.scene.tweens.add({
+        targets: visual.ring,
+        alpha: 0.5,
+        scaleX: 1.25,
+        scaleY: 1.25,
+        duration: 100,
+        yoyo: true,
+        ease: "Quad.Out"
       });
     }
   }
