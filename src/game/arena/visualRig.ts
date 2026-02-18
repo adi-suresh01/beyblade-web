@@ -157,8 +157,16 @@ export class ArenaVisualRig {
     const fill = bar.list[1] as Phaser.GameObjects.Rectangle;
     fill.width = 32 * ratio;
 
-    if (!isBit && ratio < 0.3) {
-      fill.setFillStyle(0xff5a7a, 0.95);
+    if (!isBit) {
+      if (ratio < 0.2) {
+        fill.setFillStyle(0xff3d5f, 0.98);
+      } else if (ratio < 0.4) {
+        fill.setFillStyle(0xff5a7a, 0.95);
+      } else {
+        fill.setFillStyle(0x4bc084, 0.95);
+      }
+    } else if (ratio >= 1) {
+      fill.setFillStyle(0xfff04d, 1);
     }
   }
 
