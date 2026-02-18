@@ -528,68 +528,27 @@ export function BeybladeGameClient() {
 
       {inBattle ? (
         <>
-          <section className="panel battle-head">
-            <div className="battle-meta">
-              <div>
-                <span>You</span>
-                <strong>{BEYBLADES[playerBlade].name}</strong>
-              </div>
-              <div>
-                <span>AI</span>
-                <strong>{BEYBLADES[aiBlade].name}</strong>
-              </div>
-              <div>
-                <span>Difficulty</span>
-                <strong>{difficulty.toUpperCase()}</strong>
-              </div>
+          <section className="battle-header">
+            <div className="battle-info">
+              <span className="player-name">{BEYBLADES[playerBlade].name}</span>
+              <span className="vs">VS</span>
+              <span className="ai-name">{BEYBLADES[aiBlade].name}</span>
             </div>
-            <div className="battle-head-actions">
-              <button className="secondary" onClick={() => sendArenaReset()}>
-                Replay
+            <div className="battle-actions">
+              <button className="icon-btn" onClick={() => sendArenaReset()} title="Replay">
+                ↻
               </button>
-              <button className="secondary" onClick={resetToIntro}>
-                New Match
+              <button className="icon-btn" onClick={resetToIntro} title="New Match">
+                ⌂
               </button>
             </div>
           </section>
 
-          <section className="panel stats-panel">
-            <div className="stat-row">
-              <span>{BEYBLADES[playerBlade].name} HP</span>
-              <strong>{arena.playerHp}</strong>
-            </div>
-            <div className="meter">
-              <div style={{ width: `${arena.playerHp}%`, background: "#4bc084" }} />
-            </div>
-
-            <div className="stat-row">
-              <span>{BEYBLADES[aiBlade].name} HP</span>
-              <strong>{arena.aiHp}</strong>
-            </div>
-            <div className="meter">
-              <div style={{ width: `${arena.aiHp}%`, background: "#ff5a7a" }} />
-            </div>
-
-            <div className="stat-row">
-              <span>Your Bit Beast</span>
-              <strong>{arena.playerBit}%</strong>
-            </div>
-            <div className="meter">
-              <div style={{ width: `${arena.playerBit}%`, background: "#4bc3ff" }} />
-            </div>
-
-            <div className="stat-row">
-              <span>AI Bit Beast</span>
-              <strong>{arena.aiBit}%</strong>
-            </div>
-            <div className="meter">
-              <div style={{ width: `${arena.aiBit}%`, background: "#ffd84d" }} />
-            </div>
-          </section>
-
-          <section className="panel arena-panel">
+          <section className="arena-main">
             <ArenaCanvas />
+          </section>
 
+          <section className="battle-controls">
             <div className="commands">
               <button onClick={() => sendArenaCommand("attack")}>Attack [A]</button>
               <button onClick={() => sendArenaCommand("dodge")}>Dodge [D]</button>
@@ -597,55 +556,36 @@ export function BeybladeGameClient() {
             </div>
           </section>
 
-          <section className="panel voice-panel">
-            <div className="voice-controls">
-              <button onClick={isListening ? stop : start} disabled={!supported}>
-                {isListening ? "Stop Voice" : "Start Voice"}
+          <section className="panel battle-footer">
+            <div className="voice-section">
+              <button onClick={isListening ? stop : start} disabled={!supported} className="voice-toggle">
+                {isListening ? "🎤 Listening" : "🎤 Voice"}
               </button>
-              <button
-                className="secondary"
-                onClick={() => {
-                  void triggerAiRoast("Talk back.", "Player requested roast");
-                }}
-                disabled={isTalking}
-              >
-                Provoke AI
-              </button>
-              <button className="secondary" onClick={clearLogs}>
-                Clear Logs
-              </button>
+              <div className="trash-input">
+                <input
+                  placeholder="Trash talk..."
+                  value={manualTrash}
+                  onChange={(event) => setManualTrash(event.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      void handlePlayerTrashTalk(manualTrash);
+                      setManualTrash("");
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    void handlePlayerTrashTalk(manualTrash);
+                    setManualTrash("");
+                  }}
+                >
+                  ▶
+                </button>
+              </div>
             </div>
-
-            {lastTranscript ? <p className="muted">{lastTranscript}</p> : null}
-            {error ? <p className="error">{error}</p> : null}
-
-            <div className="manual-trash">
-              <input
-                placeholder="Type trash talk"
-                value={manualTrash}
-                onChange={(event) => setManualTrash(event.target.value)}
-              />
-              <button
-                onClick={() => {
-                  void handlePlayerTrashTalk(manualTrash);
-                  setManualTrash("");
-                }}
-              >
-                Send
-              </button>
-            </div>
-          </section>
-
-          <section className="panel logs-panel">
-            <h2>Feed</h2>
-            <ul>
-              {logs.map((log) => (
-                <li key={log.id}>
-                  <strong>[{log.speaker.toUpperCase()}]</strong> {log.text}
-                </li>
-              ))}
-              {!logs.length ? <li>No events yet.</li> : null}
-            </ul>
+            {lastTranscript || error ? (
+              <p className={error ? "error" : "muted"}>{error || lastTranscript}</p>
+            ) : null}
           </section>
         </>
       ) : null}
