@@ -647,7 +647,7 @@ button:hover:not(:disabled) {
 }
 
 button:active:not(:disabled) {
-  transform: translateY(0);
+  transform: translateY(1px) scale(0.98);
   box-shadow: 0 2px 8px rgba(222, 106, 62, 0.4);
 }
 
