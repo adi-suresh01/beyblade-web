@@ -790,8 +790,16 @@ export class ArenaVisualRig {
     const base = this.scene.add
       .image(0, 0, this.textureKey(bladeId))
       .setDisplaySize(BLADE_SIZE, BLADE_SIZE)
-      .setDepth(13)
-      .setScale(1);
+      .setDepth(13);
+
+    console.log('Base sprite:', {
+      displayWidth: base.displayWidth,
+      displayHeight: base.displayHeight,
+      scaleX: base.scaleX,
+      scaleY: base.scaleY,
+      width: base.width,
+      height: base.height
+    });
 
     const ring = this.scene.add
       .image(0, 0, this.textureKey(bladeId))
