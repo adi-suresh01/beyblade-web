@@ -129,6 +129,9 @@ export class ArenaVisualRig {
     this.updateActorVisual("player", time, delta, hpRatios.player);
     this.updateActorVisual("ai", time, delta, hpRatios.ai);
 
+    this.updateFloatingBar(this.visuals.player, hpRatios.player, false);
+    this.updateFloatingBar(this.visuals.ai, hpRatios.ai, false);
+
     const playerBase = this.visuals.player.base;
     const aiBase = this.visuals.ai.base;
 
@@ -143,6 +146,30 @@ export class ArenaVisualRig {
         this.spawnClashSpark(midX, midY);
       }
     }
+  }
+
+  updateFloatingBar(visual: ActorVisual, ratio: number, isBit: boolean): void {
+    const bar = isBit ? visual.bitBar : visual.hpBar;
+    const base = visual.base;
+    if (!bar || !base) return;
+
+    bar.setPosition(base.x, base.y - 22);
+    const fill = bar.list[1] as Phaser.GameObjects.Rectangle;
+    fill.width = 32 * ratio;
+
+    if (!isBit && ratio < 0.3) {
+      fill.setFillStyle(0xff5a7a, 0.95);
+    }
+  }
+
+  updateBitBars(playerBit: number, aiBit: number): void {
+    this.updateFloatingBar(this.visuals.player, playerBit / 100, true);
+    this.updateFloatingBar(this.visuals.ai, aiBit / 100, true);
+
+    const playerBitBar = this.visuals.player.bitBar;
+    const aiBitBar = this.visuals.ai.bitBar;
+    if (playerBitBar) playerBitBar.setY(playerBitBar.y - 6);
+    if (aiBitBar) aiBitBar.setY(aiBitBar.y - 6);
   }
 
   applyConfig(config: ArenaConfig): void {
