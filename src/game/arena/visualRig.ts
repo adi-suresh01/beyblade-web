@@ -176,13 +176,40 @@ export class ArenaVisualRig {
   }
 
   updateBitBars(playerBit: number, aiBit: number): void {
-    this.updateFloatingBar(this.visuals.player, playerBit / 100, true);
-    this.updateFloatingBar(this.visuals.ai, aiBit / 100, true);
-
+    const playerBase = this.visuals.player.base;
+    const aiBase = this.visuals.ai.base;
     const playerBitBar = this.visuals.player.bitBar;
     const aiBitBar = this.visuals.ai.bitBar;
-    if (playerBitBar) playerBitBar.setY(playerBitBar.y - 6);
-    if (aiBitBar) aiBitBar.setY(aiBitBar.y - 6);
+
+    if (playerBitBar && playerBase) {
+      playerBitBar.setPosition(playerBase.x, playerBase.y - 30);
+      const glow = playerBitBar.list[0] as Phaser.GameObjects.Rectangle;
+      const fill = playerBitBar.list[2] as Phaser.GameObjects.Rectangle;
+      fill.width = 34 * (playerBit / 100);
+
+      if (playerBit >= 100) {
+        fill.setFillStyle(0xfff04d, 1);
+        glow.setFillStyle(0xfff04d, 0.3);
+      } else {
+        fill.setFillStyle(0x4bc3ff, 0.95);
+        glow.setFillStyle(0x4bc3ff, 0.15);
+      }
+    }
+
+    if (aiBitBar && aiBase) {
+      aiBitBar.setPosition(aiBase.x, aiBase.y - 30);
+      const glow = aiBitBar.list[0] as Phaser.GameObjects.Rectangle;
+      const fill = aiBitBar.list[2] as Phaser.GameObjects.Rectangle;
+      fill.width = 34 * (aiBit / 100);
+
+      if (aiBit >= 100) {
+        fill.setFillStyle(0xfff04d, 1);
+        glow.setFillStyle(0xfff04d, 0.3);
+      } else {
+        fill.setFillStyle(0xffd84d, 0.95);
+        glow.setFillStyle(0xffd84d, 0.15);
+      }
+    }
   }
 
   applyConfig(config: ArenaConfig): void {
