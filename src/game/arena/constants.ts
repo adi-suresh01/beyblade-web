@@ -10,10 +10,10 @@ export const ORBIT_Y = 16;
 export const BLADE_SIZE = 28;
 
 export const ATTACK_STRIKE_DELAY_MS = 220;
-export const ATTACK_COOLDOWN_HIT_MS = 360;
-export const ATTACK_COOLDOWN_MISS_MS = 960;
-export const DODGE_COOLDOWN_PLAYER_MS = 760;
-export const DODGE_COOLDOWN_AI_MS = 980;
+export const ATTACK_COOLDOWN_HIT_MS = 800;
+export const ATTACK_COOLDOWN_MISS_MS = 1400;
+export const DODGE_COOLDOWN_PLAYER_MS = 1200;
+export const DODGE_COOLDOWN_AI_MS = 1600;
 
 export const ATTACK_LUNGE_DISTANCE = 320;
 export const ATTACK_LUNGE_IN_MS = 160;
