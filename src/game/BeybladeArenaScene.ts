@@ -188,14 +188,14 @@ export class BeybladeArenaScene extends Phaser.Scene {
     }
 
     if (this.config.difficulty === "easy") {
-      return DODGE_COOLDOWN_AI_MS + 1200;
+      return DODGE_COOLDOWN_AI_MS + 1600;
     }
 
     if (this.config.difficulty === "hard") {
-      return DODGE_COOLDOWN_AI_MS - 140;
+      return DODGE_COOLDOWN_AI_MS + 200;
     }
 
-    return DODGE_COOLDOWN_AI_MS;
+    return DODGE_COOLDOWN_AI_MS + 400;
   }
 
   private getAttackRecoveryCooldown(actor: ActorId, hit: boolean): number {

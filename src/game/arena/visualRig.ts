@@ -788,6 +788,8 @@ export class ArenaVisualRig {
     visual.base?.destroy();
     visual.ring?.destroy();
     visual.highlight?.destroy();
+    visual.hpBar?.destroy(true);
+    visual.bitBar?.destroy(true);
     this.visuals[actor] = emptyVisual();
   }
 
