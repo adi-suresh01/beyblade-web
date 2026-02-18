@@ -905,15 +905,19 @@ export class ArenaVisualRig {
 
   private createFloatingBar(color: number): Phaser.GameObjects.Container {
     const bg = this.scene.add
-      .rectangle(0, 0, 32, 4, 0x0a1836, 0.8)
-      .setStrokeStyle(1, 0x3d70c4, 0.6);
+      .rectangle(0, 0, 34, 5, 0x0a1836, 0.85)
+      .setStrokeStyle(1, 0x4a7fdb, 0.7);
 
     const fill = this.scene.add
-      .rectangle(-16, 0, 0, 4, color, 0.95)
+      .rectangle(-17, 0, 0, 5, color, 0.98)
       .setOrigin(0, 0.5);
 
+    const glow = this.scene.add
+      .rectangle(0, 0, 34, 5, color, 0.15)
+      .setBlendMode(Phaser.BlendModes.ADD);
+
     const container = this.scene.add
-      .container(0, -22, [bg, fill])
+      .container(0, -24, [glow, bg, fill])
       .setDepth(20);
 
     return container;
