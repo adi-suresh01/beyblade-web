@@ -1242,6 +1242,35 @@ export class ArenaVisualRig {
     });
   }
 
+  showWinnerEffect(winner: ActorId): void {
+    const visual = this.visuals[winner];
+    const token = visual.base;
+    if (!token) return;
+
+    const color = this.resolveBladeColor(this.actorBlade[winner]);
+
+    for (let i = 0; i < 3; i++) {
+      this.scene.time.delayedCall(i * 120, () => {
+        const burst = this.scene.add
+          .circle(token.x, token.y, 20, color, 0.4)
+          .setDepth(25)
+          .setBlendMode(Phaser.BlendModes.ADD);
+
+        this.scene.tweens.add({
+          targets: burst,
+          scaleX: 8 + i * 2,
+          scaleY: 8 + i * 2,
+          alpha: 0,
+          duration: 800,
+          ease: "Quad.Out",
+          onComplete: () => burst.destroy()
+        });
+      });
+    }
+
+    this.scene.cameras.main.flash(400, 255, 255, 255, false);
+  }
+
   private applyHitStop(durationMs: number): void {
     const now = this.scene.time.now;
     const until = now + durationMs;
