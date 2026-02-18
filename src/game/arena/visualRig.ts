@@ -582,16 +582,17 @@ export class ArenaVisualRig {
       .setBlendMode(Phaser.BlendModes.ADD);
 
     const damageText = this.scene.add
-      .text(token.x, token.y - 38, `-${damage}`, {
+      .text(token.x, token.y - 40, `-${damage}`, {
         fontFamily: "Teko, Rajdhani, sans-serif",
-        fontSize: bitBeast ? "36px" : "28px",
-        fontStyle: "700",
+        fontSize: bitBeast ? "40px" : "32px",
+        fontStyle: "800",
         color: "#ffffff",
         stroke: "#0b1730",
-        strokeThickness: 5
+        strokeThickness: 6
       })
       .setOrigin(0.5)
-      .setDepth(19);
+      .setDepth(19)
+      .setScale(0.8);
 
     this.emitImpactSparks(token.x, token.y, flashColor, bitBeast ? 16 : 12);
     this.emitShockwave(token.x, token.y, flashColor, bitBeast);

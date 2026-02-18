@@ -446,6 +446,11 @@ a {
   transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
+.difficulty-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(141, 190, 255, 0.65);
+}
+
 .difficulty-card.selected {
   border-color: #84baff;
   box-shadow: 0 0 0 2px rgba(115, 186, 255, 0.35), 0 14px 26px rgba(8, 20, 48, 0.56);
@@ -850,6 +855,10 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+}
+
+.commands button:active {
+  transform: scale(0.95);
 }
 
 .voice-panel {
