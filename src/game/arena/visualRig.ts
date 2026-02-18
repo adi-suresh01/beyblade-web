@@ -743,48 +743,48 @@ export class ArenaVisualRig {
   private drawArenaBackdrop(): void {
     const graphics = this.scene.add.graphics();
 
-    graphics.fillStyle(0x050d1f, 1);
+    graphics.fillStyle(0x040b18, 1);
     graphics.fillRect(0, 0, this.scene.scale.width, this.scene.scale.height);
 
     const gradient = this.scene.add.graphics();
-    gradient.fillGradientStyle(0x0a1836, 0x0a1836, 0x1a2d5a, 0x1a2d5a, 0.85, 0.85, 0.4, 0.4);
+    gradient.fillGradientStyle(0x0a1836, 0x0a1836, 0x1e3268, 0x1e3268, 0.9, 0.9, 0.45, 0.45);
     gradient.fillRect(ARENA_CENTER_X - 380, ARENA_CENTER_Y - 180, 760, 360);
     gradient.setBlendMode(Phaser.BlendModes.ADD);
 
     this.scene.add
-      .rectangle(ARENA_CENTER_X, ARENA_CENTER_Y, 760, 360, 0x081630, 0.2)
-      .setStrokeStyle(4, 0x294c87, 0.95);
+      .rectangle(ARENA_CENTER_X, ARENA_CENTER_Y, 760, 360, 0x081630, 0.15)
+      .setStrokeStyle(4, 0x3d5fab, 1);
 
-    for (let i = 0; i < 3; i++) {
-      const radius = 200 - i * 34;
+    for (let i = 0; i < 4; i++) {
+      const radius = 210 - i * 32;
       const circle = this.scene.add
-        .circle(ARENA_CENTER_X, ARENA_CENTER_Y, radius, 0x0a1836, 0.08)
-        .setStrokeStyle(2, 0x3d70c4, 0.4 + i * 0.15);
+        .circle(ARENA_CENTER_X, ARENA_CENTER_Y, radius, 0x0a1836, 0.06)
+        .setStrokeStyle(2, 0x4a7fdb, 0.35 + i * 0.12);
 
       this.scene.tweens.add({
         targets: circle,
-        alpha: 0.3 + i * 0.1,
-        duration: 1200 + i * 400,
+        alpha: 0.25 + i * 0.08,
+        duration: 1100 + i * 350,
         yoyo: true,
         repeat: -1,
         ease: "Sine.InOut"
       });
     }
 
-    for (let i = 0; i < 6; i++) {
-      const angle = (i * 60) * Math.PI / 180;
-      const x = ARENA_CENTER_X + Math.cos(angle) * 170;
-      const y = ARENA_CENTER_Y + Math.sin(angle) * 170;
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * 45) * Math.PI / 180;
+      const x = ARENA_CENTER_X + Math.cos(angle) * 175;
+      const y = ARENA_CENTER_Y + Math.sin(angle) * 175;
       const marker = this.scene.add
-        .circle(x, y, 3, 0x4f89e8, 0.6)
+        .circle(x, y, 2.5, 0x5d9eff, 0.7)
         .setDepth(1);
 
       this.scene.tweens.add({
         targets: marker,
-        alpha: 0.8,
-        scaleX: 1.3,
-        scaleY: 1.3,
-        duration: 1600 + i * 200,
+        alpha: 0.9,
+        scaleX: 1.4,
+        scaleY: 1.4,
+        duration: 1500 + i * 180,
         yoyo: true,
         repeat: -1,
         ease: "Sine.InOut"
@@ -792,16 +792,16 @@ export class ArenaVisualRig {
     }
 
     const centerGlow = this.scene.add
-      .circle(ARENA_CENTER_X, ARENA_CENTER_Y, 8, 0x4f89e8, 0.3)
+      .circle(ARENA_CENTER_X, ARENA_CENTER_Y, 10, 0x5d9eff, 0.35)
       .setDepth(1)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     this.scene.tweens.add({
       targets: centerGlow,
-      scaleX: 2.5,
-      scaleY: 2.5,
-      alpha: 0.5,
-      duration: 2000,
+      scaleX: 2.8,
+      scaleY: 2.8,
+      alpha: 0.55,
+      duration: 2200,
       yoyo: true,
       repeat: -1,
       ease: "Sine.InOut"
