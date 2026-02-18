@@ -792,15 +792,6 @@ export class ArenaVisualRig {
       .setDisplaySize(BLADE_SIZE, BLADE_SIZE)
       .setDepth(13);
 
-    console.log('Base sprite:', {
-      displayWidth: base.displayWidth,
-      displayHeight: base.displayHeight,
-      scaleX: base.scaleX,
-      scaleY: base.scaleY,
-      width: base.width,
-      height: base.height
-    });
-
     const ring = this.scene.add
       .image(0, 0, this.textureKey(bladeId))
       .setDisplaySize(BLADE_SIZE * 1.08, BLADE_SIZE * 1.08)
@@ -842,7 +833,26 @@ export class ArenaVisualRig {
       ease: "Linear"
     });
 
-    return { shadow, glow, base, ring, highlight, trailNextAt: 0 };
+    const hpBar = this.createFloatingBar(color);
+    const bitBar = this.createFloatingBar(0xffd84d);
+
+    return { shadow, glow, base, ring, highlight, trailNextAt: 0, hpBar, bitBar };
+  }
+
+  private createFloatingBar(color: number): Phaser.GameObjects.Container {
+    const bg = this.scene.add
+      .rectangle(0, 0, 32, 4, 0x0a1836, 0.8)
+      .setStrokeStyle(1, 0x3d70c4, 0.6);
+
+    const fill = this.scene.add
+      .rectangle(-16, 0, 0, 4, color, 0.95)
+      .setOrigin(0, 0.5);
+
+    const container = this.scene.add
+      .container(0, -22, [bg, fill])
+      .setDepth(20);
+
+    return container;
   }
 
   private setActorBlade(actor: ActorId, bladeId: BeybladeId): void {
