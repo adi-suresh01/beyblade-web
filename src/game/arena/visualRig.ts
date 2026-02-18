@@ -594,8 +594,34 @@ export class ArenaVisualRig {
       .setDepth(19)
       .setScale(0.8);
 
-    this.emitImpactSparks(token.x, token.y, flashColor, bitBeast ? 16 : 12);
+    this.emitImpactSparks(token.x, token.y, flashColor, bitBeast ? 20 : 15);
     this.emitShockwave(token.x, token.y, flashColor, bitBeast);
+
+    if (bitBeast) {
+      for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2;
+        const dist = 18;
+        const x = token.x + Math.cos(angle) * dist;
+        const y = token.y + Math.sin(angle) * dist;
+
+        this.scene.time.delayedCall(i * 30, () => {
+          const ring = this.scene.add
+            .circle(x, y, 4, flashColor, 0.9)
+            .setDepth(17)
+            .setBlendMode(Phaser.BlendModes.ADD);
+
+          this.scene.tweens.add({
+            targets: ring,
+            scaleX: 3,
+            scaleY: 3,
+            alpha: 0,
+            duration: 300,
+            ease: "Quad.Out",
+            onComplete: () => ring.destroy()
+          });
+        });
+      }
+    }
 
     this.scene.tweens.add({
       targets: burst,
