@@ -999,21 +999,21 @@ export class ArenaVisualRig {
       .setDisplaySize(BLADE_SIZE * 0.88, BLADE_SIZE * 0.88)
       .setDepth(11)
       .setRotation(rotation)
-      .setAlpha(boost > 1 ? 0.28 : 0.15)
+      .setAlpha(boost > 1 ? 0.32 : 0.18)
       .setTint(fallbackColor)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     const glow = this.scene.add
-      .circle(x, y, BLADE_SIZE * 0.4, fallbackColor, boost > 1 ? 0.18 : 0.08)
+      .circle(x, y, BLADE_SIZE * 0.42, fallbackColor, boost > 1 ? 0.22 : 0.1)
       .setDepth(10)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     this.scene.tweens.add({
       targets: trail,
       alpha: 0,
-      scaleX: trail.scaleX + 0.2,
-      scaleY: trail.scaleY + 0.2,
-      duration: boost > 1 ? 180 : 240,
+      scaleX: trail.scaleX + 0.25,
+      scaleY: trail.scaleY + 0.25,
+      duration: boost > 1 ? 200 : 280,
       ease: "Cubic.Out",
       onComplete: () => {
         trail.destroy();
@@ -1023,9 +1023,9 @@ export class ArenaVisualRig {
     this.scene.tweens.add({
       targets: glow,
       alpha: 0,
-      scaleX: 1.8,
-      scaleY: 1.8,
-      duration: boost > 1 ? 200 : 260,
+      scaleX: 2.2,
+      scaleY: 2.2,
+      duration: boost > 1 ? 240 : 300,
       ease: "Sine.Out",
       onComplete: () => {
         glow.destroy();
