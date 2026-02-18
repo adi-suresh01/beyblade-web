@@ -97,6 +97,8 @@ export class BeybladeArenaScene extends Phaser.Scene {
       ai: this.aiHp / MAX_HP
     });
 
+    visuals.updateBitBars(this.playerBit, this.aiBit);
+
     if (visuals.inHitStop(time) || this.winner) {
       return;
     }
