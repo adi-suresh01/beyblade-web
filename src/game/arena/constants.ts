@@ -4,8 +4,8 @@ export const PLAYER_HOME_X = 232;
 export const AI_HOME_X = 568;
 export const PLAYER_HOME_Y = 208;
 export const AI_HOME_Y = 214;
-export const ORBIT_X = 22;
-export const ORBIT_Y = 16;
+export const ORBIT_X = 26;
+export const ORBIT_Y = 19;
 
 export const BLADE_SIZE = 28;
 
@@ -23,5 +23,5 @@ export const ATTACK_CURVE_ARC_Y = 44;
 export const DODGE_ESCAPE_X = 74;
 export const DODGE_ESCAPE_Y = 36;
 
-export const IMPACT_HIT_STOP_MS = 56;
-export const BIT_BEAST_HIT_STOP_MS = 74;
+export const IMPACT_HIT_STOP_MS = 68;
+export const BIT_BEAST_HIT_STOP_MS = 90;
