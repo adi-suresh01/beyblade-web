@@ -76,6 +76,15 @@ a {
   gap: 12px;
 }
 
+.page.phase-battle {
+  height: 100vh;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
 .hero-menu {
   display: grid;
   justify-items: center;
