@@ -1006,4 +1006,12 @@ button:disabled {
   .arena-canvas {
     min-height: 300px;
   }
+
+  .voice-section {
+    grid-template-columns: 1fr;
+  }
+
+  .battle-info {
+    font-size: 0.95rem;
+  }
 }
