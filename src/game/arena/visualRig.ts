@@ -1220,26 +1220,43 @@ export class ArenaVisualRig {
     const color = colors[Math.floor(Math.random() * colors.length)];
 
     const spark = this.scene.add
-      .circle(x, y, 3, color, 0.85)
+      .circle(x, y, 4, color, 0.9)
       .setDepth(17)
       .setBlendMode(Phaser.BlendModes.ADD);
 
     const angle = Math.random() * Math.PI * 2;
-    const distance = Phaser.Math.Between(12, 28);
+    const distance = Phaser.Math.Between(15, 32);
 
     this.scene.tweens.add({
       targets: spark,
       x: x + Math.cos(angle) * distance,
       y: y + Math.sin(angle) * distance,
       alpha: 0,
-      scaleX: 0.3,
-      scaleY: 0.3,
-      duration: Phaser.Math.Between(120, 200),
+      scaleX: 0.2,
+      scaleY: 0.2,
+      duration: Phaser.Math.Between(140, 220),
       ease: "Quad.Out",
       onComplete: () => {
         spark.destroy();
       }
     });
+
+    if (Math.random() < 0.3) {
+      const ring = this.scene.add
+        .circle(x, y, 6, 0xffffff, 0.6)
+        .setDepth(16)
+        .setBlendMode(Phaser.BlendModes.ADD);
+
+      this.scene.tweens.add({
+        targets: ring,
+        scaleX: 2.5,
+        scaleY: 2.5,
+        alpha: 0,
+        duration: 180,
+        ease: "Quad.Out",
+        onComplete: () => ring.destroy()
+      });
+    }
   }
 
   showWinnerEffect(winner: ActorId): void {
