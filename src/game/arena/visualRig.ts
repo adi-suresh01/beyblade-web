@@ -153,20 +153,25 @@ export class ArenaVisualRig {
     const base = visual.base;
     if (!bar || !base) return;
 
-    bar.setPosition(base.x, base.y - 22);
-    const fill = bar.list[1] as Phaser.GameObjects.Rectangle;
-    fill.width = 32 * ratio;
+    bar.setPosition(base.x, base.y - 24);
+    const glow = bar.list[0] as Phaser.GameObjects.Rectangle;
+    const fill = bar.list[2] as Phaser.GameObjects.Rectangle;
+    fill.width = 34 * ratio;
 
     if (!isBit) {
       if (ratio < 0.2) {
         fill.setFillStyle(0xff3d5f, 0.98);
+        glow.setFillStyle(0xff3d5f, 0.2);
       } else if (ratio < 0.4) {
         fill.setFillStyle(0xff5a7a, 0.95);
+        glow.setFillStyle(0xff5a7a, 0.15);
       } else {
         fill.setFillStyle(0x4bc084, 0.95);
+        glow.setFillStyle(0x4bc084, 0.15);
       }
     } else if (ratio >= 1) {
       fill.setFillStyle(0xfff04d, 1);
+      glow.setFillStyle(0xfff04d, 0.25);
     }
   }
 
