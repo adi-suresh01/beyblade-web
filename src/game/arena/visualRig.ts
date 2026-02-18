@@ -1179,16 +1179,16 @@ export class ArenaVisualRig {
 
   private emitShockwave(x: number, y: number, color: number, intense: boolean): void {
     const wave = this.scene.add
-      .circle(x, y, 12, color, 0)
+      .circle(x, y, 14, color, 0)
       .setDepth(16)
-      .setStrokeStyle(intense ? 4 : 3, color, 0.8);
+      .setStrokeStyle(intense ? 5 : 3, color, 0.85);
 
     this.scene.tweens.add({
       targets: wave,
-      scaleX: intense ? 6.5 : 4.5,
-      scaleY: intense ? 6.5 : 4.5,
+      scaleX: intense ? 7 : 5,
+      scaleY: intense ? 7 : 5,
       alpha: 0,
-      duration: intense ? 420 : 320,
+      duration: intense ? 450 : 340,
       ease: "Sine.Out",
       onComplete: () => {
         wave.destroy();
@@ -1197,20 +1197,35 @@ export class ArenaVisualRig {
 
     if (intense) {
       const wave2 = this.scene.add
-        .circle(x, y, 12, color, 0)
+        .circle(x, y, 14, color, 0)
         .setDepth(16)
-        .setStrokeStyle(2, 0xffffff, 0.6);
+        .setStrokeStyle(3, 0xffffff, 0.7);
 
       this.scene.tweens.add({
         targets: wave2,
-        scaleX: 8,
-        scaleY: 8,
+        scaleX: 8.5,
+        scaleY: 8.5,
         alpha: 0,
-        duration: 540,
+        duration: 580,
         ease: "Cubic.Out",
         onComplete: () => {
           wave2.destroy();
         }
+      });
+
+      const innerWave = this.scene.add
+        .circle(x, y, 8, 0xffffff, 0.4)
+        .setDepth(17)
+        .setBlendMode(Phaser.BlendModes.ADD);
+
+      this.scene.tweens.add({
+        targets: innerWave,
+        scaleX: 4,
+        scaleY: 4,
+        alpha: 0,
+        duration: 320,
+        ease: "Quad.Out",
+        onComplete: () => innerWave.destroy()
       });
     }
   }
