@@ -205,15 +205,15 @@ export class BeybladeArenaScene extends Phaser.Scene {
 
     if (this.config.difficulty === "easy") {
       return hit
-        ? ATTACK_COOLDOWN_HIT_MS + 920
-        : ATTACK_COOLDOWN_MISS_MS + 1400;
+        ? ATTACK_COOLDOWN_HIT_MS + 1200
+        : ATTACK_COOLDOWN_MISS_MS + 1800;
     }
 
     if (this.config.difficulty === "hard") {
-      return hit ? ATTACK_COOLDOWN_HIT_MS - 90 : ATTACK_COOLDOWN_MISS_MS - 120;
+      return hit ? ATTACK_COOLDOWN_HIT_MS + 100 : ATTACK_COOLDOWN_MISS_MS + 200;
     }
 
-    return hit ? ATTACK_COOLDOWN_HIT_MS : ATTACK_COOLDOWN_MISS_MS;
+    return hit ? ATTACK_COOLDOWN_HIT_MS + 400 : ATTACK_COOLDOWN_MISS_MS + 600;
   }
 
   private performAiAction(time: number): void {
