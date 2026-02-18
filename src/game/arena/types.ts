@@ -14,6 +14,8 @@ export interface ActorVisual {
   ring?: Phaser.GameObjects.Image;
   highlight?: Phaser.GameObjects.Image;
   trailNextAt: number;
+  hpBar?: Phaser.GameObjects.Container;
+  bitBar?: Phaser.GameObjects.Container;
 }
 
 export interface ActorMotion {
