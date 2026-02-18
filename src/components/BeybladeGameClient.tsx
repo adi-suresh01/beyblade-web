@@ -145,8 +145,11 @@ export function BeybladeGameClient() {
 
   const triggerAiRoast = useCallback(
     async (playerText: string, context?: string) => {
+      if (isTalking) return;
       setIsTalking(true);
       try {
+        await new Promise(resolve => setTimeout(resolve, 800));
+
         const roast =
           (await fetchRoast({
             playerText,
@@ -166,10 +169,10 @@ export function BeybladeGameClient() {
 
         await maybeSpeak("ai", roast).catch(() => undefined);
       } finally {
-        setIsTalking(false);
+        setTimeout(() => setIsTalking(false), 2000);
       }
     },
-    [aiBlade, maybeSpeak, playerBlade]
+    [aiBlade, maybeSpeak, playerBlade, isTalking]
   );
 
   const handlePlayerTrashTalk = useCallback(
