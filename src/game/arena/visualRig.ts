@@ -901,6 +901,10 @@ export class ArenaVisualRig {
       .setScale(glowPulse * (boost > 1 ? 1.15 : 1));
 
     if (visual.base && visual.ring && visual.highlight) {
+      const baseScale = BLADE_SIZE / visual.base.width;
+      const ringScale = (BLADE_SIZE * 1.08) / visual.ring.width;
+      const highlightScale = (BLADE_SIZE * 0.84) / visual.highlight.width;
+
       visual.base.setPosition(x, y);
       visual.ring.setPosition(x, y);
       visual.highlight.setPosition(x, y);
@@ -911,16 +915,16 @@ export class ArenaVisualRig {
 
       const scaleBoost = boost > 1 ? 1.06 : 1;
       visual.base.setScale(
-        (1 + wobble * 0.2) * scaleBoost,
-        (1 - wobble * 0.16) * scaleBoost
+        baseScale * (1 + wobble * 0.2) * scaleBoost,
+        baseScale * (1 - wobble * 0.16) * scaleBoost
       );
       visual.ring.setScale(
-        (1.05 + wobble * 0.24) * scaleBoost,
-        (1.05 - wobble * 0.2) * scaleBoost
+        ringScale * (1.05 + wobble * 0.24) * scaleBoost,
+        ringScale * (1.05 - wobble * 0.2) * scaleBoost
       );
       visual.highlight.setScale(
-        (0.82 + wobble * 0.18) * scaleBoost,
-        (0.82 - wobble * 0.12) * scaleBoost
+        highlightScale * (0.82 + wobble * 0.18) * scaleBoost,
+        highlightScale * (0.82 - wobble * 0.12) * scaleBoost
       );
 
       const trailInterval = boost > 1 ? 24 : Math.max(32, 48 - hpPenalty * 16);
