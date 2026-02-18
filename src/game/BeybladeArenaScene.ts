@@ -221,7 +221,11 @@ export class BeybladeArenaScene extends Phaser.Scene {
       return;
     }
 
-    if (this.config.difficulty === "easy" && Math.random() < 0.68) {
+    if (this.config.difficulty === "easy" && Math.random() < 0.72) {
+      return;
+    }
+
+    if (this.config.difficulty === "medium" && Math.random() < 0.25) {
       return;
     }
 
