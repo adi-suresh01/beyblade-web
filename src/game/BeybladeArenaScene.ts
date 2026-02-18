@@ -432,11 +432,13 @@ export class BeybladeArenaScene extends Phaser.Scene {
   private maybeFinish(): void {
     if (this.playerHp <= 0) {
       this.winner = "ai";
-      this.emitSystem("KO. AI wins.");
+      this.emitSystem("💥 KNOCKOUT! AI WINS!");
+      this.visuals?.showWinnerEffect("ai");
       emitTauntRequest({ trigger: "player-miss" });
     } else if (this.aiHp <= 0) {
       this.winner = "player";
-      this.emitSystem("KO. You win.");
+      this.emitSystem("🏆 KNOCKOUT! YOU WIN!");
+      this.visuals?.showWinnerEffect("player");
     }
   }
 
