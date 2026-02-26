@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import type { VoiceChannel } from "@/lib/server/voiceSession";
+import { resolveVoiceSessionKey } from "@/lib/server/voiceSession";
 
 const bodySchema = z.object({
   text: z.string().min(1).max(300),
-  voiceId: z.string().min(1)
+  voiceId: z.string().min(1),
+  sessionId: z.string().min(1).max(80).optional(),
+  channel: z.enum(["player", "ai", "unknown"]).optional()
 });
 
 const ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1/text-to-speech";
