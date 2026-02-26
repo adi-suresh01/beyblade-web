@@ -20,6 +20,18 @@ const bodySchema = z.object({
 
 const ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1/text-to-speech";
 
+function inferChannelFromVoiceId(voiceId: string): VoiceChannel {
+  const aiVoiceId = (process.env.NEXT_PUBLIC_ELEVENLABS_AI_VOICE_ID || "").trim();
+  const playerVoiceId = (process.env.NEXT_PUBLIC_ELEVENLABS_PLAYER_VOICE_ID || "").trim();
+  if (aiVoiceId && voiceId === aiVoiceId) {
+    return "ai";
+  }
+  if (playerVoiceId && voiceId === playerVoiceId) {
+    return "player";
+  }
+  return "unknown";
+}
+
 export async function POST(request: NextRequest) {
   const json = await request.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
@@ -29,7 +41,7 @@ export async function POST(request: NextRequest) {
   }
 
   const sessionKey = resolveVoiceSessionKey(parsed.data.sessionId, request.headers);
-  const channel: VoiceChannel = parsed.data.channel || "unknown";
+  const channel: VoiceChannel = parsed.data.channel || inferChannelFromVoiceId(parsed.data.voiceId);
   const session = getOrCreateVoiceSession(sessionKey);
   trimVoiceHistory(session);
 
