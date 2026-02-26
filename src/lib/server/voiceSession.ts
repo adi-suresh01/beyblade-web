@@ -106,6 +106,22 @@ export function recordSpokenText(
   });
 }
 
+export function isRecentSpokenDuplicate(
+  session: VoiceSessionState,
+  text: string,
+  withinMs = 4000,
+  now = Date.now()
+): boolean {
+  const normalized = normalizeVoiceText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return session.recentSpoken.some(
+    (item) => item.text === normalized && now - item.at <= withinMs
+  );
+}
+
 export function normalizeVoiceText(input: string): string {
   return input
     .toLowerCase()
