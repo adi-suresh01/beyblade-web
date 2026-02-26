@@ -205,6 +205,16 @@ export function trimVoiceHistory(
   session.recentHeard = session.recentHeard.filter((item) => now - item.at <= maxAgeMs);
 }
 
+export function getRecentAiSpoken(
+  session: VoiceSessionState,
+  now = Date.now(),
+  withinMs = 12000
+): VoiceHistoryItem[] {
+  return session.recentSpoken.filter(
+    (item) => item.channel === "ai" && now - item.at <= withinMs
+  );
+}
+
 export function normalizeVoiceText(input: string): string {
   return input
     .toLowerCase()
