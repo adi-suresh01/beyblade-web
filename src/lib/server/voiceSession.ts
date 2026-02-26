@@ -179,6 +179,23 @@ export function isLikelySpeakerEcho(
   });
 }
 
+export function getBurstSuppression(
+  session: VoiceSessionState,
+  now = Date.now(),
+  windowMs = 15000,
+  maxSpoken = 3
+): VoiceSuppression {
+  const spokenCount = session.recentSpoken.filter((item) => now - item.at <= windowMs).length;
+  if (spokenCount < maxSpoken) {
+    return { suppressed: false };
+  }
+  return {
+    suppressed: true,
+    reason: "burst-limit",
+    retryAfterMs: 1200
+  };
+}
+
 export function normalizeVoiceText(input: string): string {
   return input
     .toLowerCase()
