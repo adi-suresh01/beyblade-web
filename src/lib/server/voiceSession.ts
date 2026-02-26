@@ -86,6 +86,26 @@ export function recordHeardText(
   });
 }
 
+export function recordSpokenText(
+  session: VoiceSessionState,
+  text: string,
+  channel: VoiceChannel,
+  now = Date.now()
+): void {
+  const normalized = normalizeVoiceText(text);
+  if (!normalized) {
+    return;
+  }
+
+  session.updatedAt = now;
+  session.lastSpokenAt = now;
+  appendHistory(session.recentSpoken, {
+    text: normalized,
+    at: now,
+    channel
+  });
+}
+
 export function normalizeVoiceText(input: string): string {
   return input
     .toLowerCase()
