@@ -5,6 +5,7 @@ import {
   getAiCooldownSuppression,
   getBurstSuppression,
   getOrCreateVoiceSession,
+  isRecentSpokenDuplicate,
   resolveVoiceSessionKey,
   trimVoiceHistory
 } from "@/lib/server/voiceSession";
@@ -32,6 +33,17 @@ export async function POST(request: NextRequest) {
   trimVoiceHistory(session);
 
   if (channel === "ai") {
+    if (isRecentSpokenDuplicate(session, parsed.data.text, 5000)) {
+      return NextResponse.json(
+        {
+          error: "Voice output deduped",
+          reason: "duplicate-ai-tts",
+          retryAfterMs: 1200
+        },
+        { status: 429 }
+      );
+    }
+
     const burst = getBurstSuppression(session);
     if (burst.suppressed) {
       return NextResponse.json(
