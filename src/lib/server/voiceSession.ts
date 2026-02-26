@@ -159,6 +159,26 @@ export function getAiCooldownSuppression(
   };
 }
 
+export function isLikelySpeakerEcho(
+  session: VoiceSessionState,
+  text: string,
+  now = Date.now(),
+  similarityThreshold = 0.65,
+  withinMs = 9000
+): boolean {
+  const normalized = normalizeVoiceText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return session.recentSpoken.some((item) => {
+    if (item.channel !== "ai" || now - item.at > withinMs) {
+      return false;
+    }
+    return jaccardSimilarity(normalized, item.text) >= similarityThreshold;
+  });
+}
+
 export function normalizeVoiceText(input: string): string {
   return input
     .toLowerCase()
