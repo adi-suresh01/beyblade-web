@@ -12,7 +12,7 @@ import {
 } from "@/lib/server/voiceSession";
 
 const bodySchema = z.object({
-  text: z.string().min(1).max(300),
+  text: z.string().min(1).max(220),
   voiceId: z.string().min(1),
   sessionId: z.string().min(1).max(80).optional(),
   channel: z.enum(["player", "ai", "unknown"]).optional()
