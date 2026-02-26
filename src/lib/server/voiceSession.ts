@@ -138,6 +138,27 @@ export function isRecentHeardDuplicate(
   );
 }
 
+export function getAiCooldownSuppression(
+  session: VoiceSessionState,
+  now = Date.now(),
+  minGapMs = 3200
+): VoiceSuppression {
+  if (!session.lastSpokenAt) {
+    return { suppressed: false };
+  }
+
+  const elapsed = now - session.lastSpokenAt;
+  if (elapsed >= minGapMs) {
+    return { suppressed: false };
+  }
+
+  return {
+    suppressed: true,
+    reason: "ai-cooldown",
+    retryAfterMs: minGapMs - elapsed
+  };
+}
+
 export function normalizeVoiceText(input: string): string {
   return input
     .toLowerCase()
