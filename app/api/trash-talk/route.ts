@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { BEYBLADES } from "@/lib/game/beyblades";
+import {
+  getOrCreateVoiceSession,
+  isLikelySpeakerEcho,
+  isRecentHeardDuplicate,
+  recordHeardText,
+  resolveVoiceSessionKey,
+  trimVoiceHistory
+} from "@/lib/server/voiceSession";
 
 const bodySchema = z.object({
   playerText: z.string().min(1).max(400),
   playerBlade: z.enum(["dragoon", "dranzer", "draciel", "driger"]),
   aiBlade: z.enum(["dragoon", "dranzer", "draciel", "driger"]),
-  context: z.string().max(120).optional()
+  context: z.string().max(120).optional(),
+  sessionId: z.string().min(1).max(80).optional()
 });
 
 const fallbackLines = [
@@ -130,6 +139,28 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
+
+  const sessionKey = resolveVoiceSessionKey(parsed.data.sessionId, request.headers);
+  const session = getOrCreateVoiceSession(sessionKey);
+  trimVoiceHistory(session);
+
+  if (isRecentHeardDuplicate(session, parsed.data.playerText, 2600)) {
+    return NextResponse.json({
+      roast: " ",
+      suppressed: true,
+      reason: "duplicate-player-input"
+    });
+  }
+
+  if (isLikelySpeakerEcho(session, parsed.data.playerText)) {
+    return NextResponse.json({
+      roast: " ",
+      suppressed: true,
+      reason: "speaker-echo"
+    });
+  }
+
+  recordHeardText(session, parsed.data.playerText, "player");
 
   const roast =
     (await generateRoastWithModel(parsed.data).catch(() => null)) || randomFallback();
