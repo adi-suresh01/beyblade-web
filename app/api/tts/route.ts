@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { VoiceChannel } from "@/lib/server/voiceSession";
 import {
   getAiCooldownSuppression,
+  getBurstSuppression,
   getOrCreateVoiceSession,
   resolveVoiceSessionKey,
   trimVoiceHistory
@@ -31,6 +32,18 @@ export async function POST(request: NextRequest) {
   trimVoiceHistory(session);
 
   if (channel === "ai") {
+    const burst = getBurstSuppression(session);
+    if (burst.suppressed) {
+      return NextResponse.json(
+        {
+          error: "Voice output throttled",
+          reason: burst.reason,
+          retryAfterMs: burst.retryAfterMs
+        },
+        { status: 429 }
+      );
+    }
+
     const suppression = getAiCooldownSuppression(session);
     if (suppression.suppressed) {
       const retrySeconds = Math.max(1, Math.ceil((suppression.retryAfterMs || 1000) / 1000));
