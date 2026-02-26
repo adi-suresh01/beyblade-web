@@ -55,6 +55,17 @@ export function getOrCreateVoiceSession(sessionKey: string, now = Date.now()): V
   return created;
 }
 
+function appendHistory(
+  list: VoiceHistoryItem[],
+  item: VoiceHistoryItem,
+  maxItems = SESSION_MAX_ITEMS
+): void {
+  list.push(item);
+  if (list.length > maxItems) {
+    list.splice(0, list.length - maxItems);
+  }
+}
+
 export function normalizeVoiceText(input: string): string {
   return input
     .toLowerCase()
