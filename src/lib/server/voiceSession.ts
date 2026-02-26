@@ -196,6 +196,15 @@ export function getBurstSuppression(
   };
 }
 
+export function trimVoiceHistory(
+  session: VoiceSessionState,
+  now = Date.now(),
+  maxAgeMs = 30000
+): void {
+  session.recentSpoken = session.recentSpoken.filter((item) => now - item.at <= maxAgeMs);
+  session.recentHeard = session.recentHeard.filter((item) => now - item.at <= maxAgeMs);
+}
+
 export function normalizeVoiceText(input: string): string {
   return input
     .toLowerCase()
