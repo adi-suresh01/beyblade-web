@@ -33,12 +33,19 @@ export async function POST(request: NextRequest) {
   if (channel === "ai") {
     const suppression = getAiCooldownSuppression(session);
     if (suppression.suppressed) {
+      const retrySeconds = Math.max(1, Math.ceil((suppression.retryAfterMs || 1000) / 1000));
       return NextResponse.json(
         {
           error: "Voice output throttled",
-          reason: suppression.reason
+          reason: suppression.reason,
+          retryAfterMs: suppression.retryAfterMs
         },
-        { status: 429 }
+        {
+          status: 429,
+          headers: {
+            "Retry-After": `${retrySeconds}`
+          }
+        }
       );
     }
   }
