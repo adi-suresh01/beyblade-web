@@ -6,6 +6,22 @@ export interface VoiceSuppression {
   retryAfterMs?: number;
 }
 
+export interface VoiceHistoryItem {
+  text: string;
+  at: number;
+  channel: VoiceChannel;
+}
+
+export interface VoiceSessionState {
+  key: string;
+  createdAt: number;
+  updatedAt: number;
+  lastSpokenAt: number;
+  lastHeardAt: number;
+  recentSpoken: VoiceHistoryItem[];
+  recentHeard: VoiceHistoryItem[];
+}
+
 export function normalizeVoiceText(input: string): string {
   return input
     .toLowerCase()
