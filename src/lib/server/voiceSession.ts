@@ -17,3 +17,21 @@ export function normalizeVoiceText(input: string): string {
 export function tokenizeVoiceText(input: string): string[] {
   return normalizeVoiceText(input).split(" ").filter(Boolean);
 }
+
+export function jaccardSimilarity(left: string, right: string): number {
+  const leftTokens = new Set(tokenizeVoiceText(left));
+  const rightTokens = new Set(tokenizeVoiceText(right));
+  if (!leftTokens.size || !rightTokens.size) {
+    return 0;
+  }
+
+  let intersection = 0;
+  for (const token of leftTokens) {
+    if (rightTokens.has(token)) {
+      intersection += 1;
+    }
+  }
+
+  const unionSize = new Set([...leftTokens, ...rightTokens]).size;
+  return unionSize ? intersection / unionSize : 0;
+}
