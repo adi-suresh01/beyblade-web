@@ -122,6 +122,22 @@ export function isRecentSpokenDuplicate(
   );
 }
 
+export function isRecentHeardDuplicate(
+  session: VoiceSessionState,
+  text: string,
+  withinMs = 3200,
+  now = Date.now()
+): boolean {
+  const normalized = normalizeVoiceText(text);
+  if (!normalized) {
+    return false;
+  }
+
+  return session.recentHeard.some(
+    (item) => item.text === normalized && now - item.at <= withinMs
+  );
+}
+
 export function normalizeVoiceText(input: string): string {
   return input
     .toLowerCase()
