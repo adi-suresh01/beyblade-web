@@ -35,3 +35,16 @@ export function jaccardSimilarity(left: string, right: string): number {
   const unionSize = new Set([...leftTokens, ...rightTokens]).size;
   return unionSize ? intersection / unionSize : 0;
 }
+
+export function resolveVoiceSessionKey(sessionId: string | undefined, headers: Headers): string {
+  const explicit = normalizeVoiceText(sessionId || "").slice(0, 80);
+  if (explicit) {
+    return `session:${explicit}`;
+  }
+
+  const forwardedFor = headers.get("x-forwarded-for") || "unknown-ip";
+  const ip = forwardedFor.split(",")[0]?.trim() || "unknown-ip";
+  const userAgent = headers.get("user-agent") || "unknown-agent";
+  const compactAgent = normalizeVoiceText(userAgent).slice(0, 60);
+  return `ua:${ip}:${compactAgent || "unknown-agent"}`;
+}
