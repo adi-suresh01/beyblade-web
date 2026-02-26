@@ -6,6 +6,7 @@ import {
   getBurstSuppression,
   getOrCreateVoiceSession,
   isRecentSpokenDuplicate,
+  recordSpokenText,
   resolveVoiceSessionKey,
   trimVoiceHistory
 } from "@/lib/server/voiceSession";
@@ -112,6 +113,7 @@ export async function POST(request: NextRequest) {
   }
 
   const audioBuffer = await upstream.arrayBuffer();
+  recordSpokenText(session, parsed.data.text, channel);
 
   return new NextResponse(audioBuffer, {
     status: 200,
