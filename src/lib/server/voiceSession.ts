@@ -13,3 +13,7 @@ export function normalizeVoiceText(input: string): string {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+export function tokenizeVoiceText(input: string): string[] {
+  return normalizeVoiceText(input).split(" ").filter(Boolean);
+}
