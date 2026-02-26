@@ -20,6 +20,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
+  const sessionKey = resolveVoiceSessionKey(parsed.data.sessionId, request.headers);
+  const channel: VoiceChannel = parsed.data.channel || "unknown";
+  void sessionKey;
+  void channel;
+
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "Missing ELEVENLABS_API_KEY" }, { status: 500 });
