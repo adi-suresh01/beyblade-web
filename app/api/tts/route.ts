@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import type { VoiceChannel } from "@/lib/server/voiceSession";
 import {
+  getAiCooldownSuppression,
   getOrCreateVoiceSession,
   resolveVoiceSessionKey,
   trimVoiceHistory
@@ -28,7 +29,19 @@ export async function POST(request: NextRequest) {
   const channel: VoiceChannel = parsed.data.channel || "unknown";
   const session = getOrCreateVoiceSession(sessionKey);
   trimVoiceHistory(session);
-  void channel;
+
+  if (channel === "ai") {
+    const suppression = getAiCooldownSuppression(session);
+    if (suppression.suppressed) {
+      return NextResponse.json(
+        {
+          error: "Voice output throttled",
+          reason: suppression.reason
+        },
+        { status: 429 }
+      );
+    }
+  }
 
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {
