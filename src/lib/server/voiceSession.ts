@@ -22,6 +22,10 @@ export interface VoiceSessionState {
   recentHeard: VoiceHistoryItem[];
 }
 
+const SESSION_TTL_MS = 8 * 60 * 1000;
+const SESSION_MAX_ITEMS = 6;
+const sessionStore = new Map<string, VoiceSessionState>();
+
 export function normalizeVoiceText(input: string): string {
   return input
     .toLowerCase()
