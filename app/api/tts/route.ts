@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import type { VoiceChannel } from "@/lib/server/voiceSession";
-import { resolveVoiceSessionKey } from "@/lib/server/voiceSession";
+import {
+  getOrCreateVoiceSession,
+  resolveVoiceSessionKey,
+  trimVoiceHistory
+} from "@/lib/server/voiceSession";
 
 const bodySchema = z.object({
   text: z.string().min(1).max(300),
@@ -22,7 +26,8 @@ export async function POST(request: NextRequest) {
 
   const sessionKey = resolveVoiceSessionKey(parsed.data.sessionId, request.headers);
   const channel: VoiceChannel = parsed.data.channel || "unknown";
-  void sessionKey;
+  const session = getOrCreateVoiceSession(sessionKey);
+  trimVoiceHistory(session);
   void channel;
 
   const apiKey = process.env.ELEVENLABS_API_KEY;
