@@ -5,3 +5,11 @@ export interface VoiceSuppression {
   reason?: string;
   retryAfterMs?: number;
 }
+
+export function normalizeVoiceText(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
