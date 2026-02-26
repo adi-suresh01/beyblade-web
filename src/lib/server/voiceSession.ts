@@ -34,6 +34,27 @@ export function pruneVoiceSessions(now = Date.now()): void {
   }
 }
 
+export function getOrCreateVoiceSession(sessionKey: string, now = Date.now()): VoiceSessionState {
+  pruneVoiceSessions(now);
+  const existing = sessionStore.get(sessionKey);
+  if (existing) {
+    existing.updatedAt = now;
+    return existing;
+  }
+
+  const created: VoiceSessionState = {
+    key: sessionKey,
+    createdAt: now,
+    updatedAt: now,
+    lastSpokenAt: 0,
+    lastHeardAt: 0,
+    recentSpoken: [],
+    recentHeard: []
+  };
+  sessionStore.set(sessionKey, created);
+  return created;
+}
+
 export function normalizeVoiceText(input: string): string {
   return input
     .toLowerCase()
